@@ -6,13 +6,16 @@ Resuming cold (new agent, new tool, cleared context)? Read `docs/PLAN.md` in ful
 
 **Ground rule from Neil**: he wants to be involved at every step. Each numbered item below is its own stop — implement one, show the result, wait for explicit go-ahead before the next. Do not batch multiple items into one turn of work. This applies regardless of which agent/tool is driving.
 
+**Git rule from Neil**: never run `git add`/`commit`/`push` or any staging/committing/branching command. He commits everything himself. Leave changes unstaged and describe what changed. See `AGENTS.md` for the full rule (one narrow exception already used: the initial `git init` + first `.gitignore` commit, done with his real-time approval — that does not extend further).
+
 ## Status
 
 - [x] Phase 1 — LocalStack spike (throwaway, cleaned up). All 6 integrations proven working. See `docs/PLAN.md` for full findings and gotchas.
 - [x] Phase 2, step 1 — `git init` done, `.gitignore` committed (excludes CV file + `*:Zone.Identifier` + `node_modules` etc.)
+- [x] Root `AGENTS.md` written — standards in place before any package scaffolding, per Neil's request to have "a set of standards from the start." Not yet committed (Neil commits it himself). Per-package `AGENTS.md` files still come later, once each package has real code to derive local convention from.
 - [ ] **Phase 2, step 2 — NEXT ACTION**: pnpm workspace + 5 empty packages (`shared`, `domain`, `worker`, `infra`, `acceptance-tests`). Verify `.gitignore` still covers everything.
 - [ ] Phase 2, step 3 — shared tool config factories (`eslint.base.js`, `prettier.base.js`, `tsconfig.base.json` with TypeScript pinned to `6.0.3`, `vitest.base.ts`)
-- [ ] Phase 2, step 4 — root + per-package `AGENTS.md` files
+- [ ] Phase 2, step 4 — per-package `AGENTS.md` files (root one already done, see above)
 - [ ] Phase 3 — `domain` package, TDD (idempotency-key handling, `KYC_PASSED_STUB` event payload builder)
 - [ ] Phase 4 — `infra` package, CDK stack built resource-by-resource (7 stops): FIFO queue+DLQ, DynamoDB table, EventBridge bus, API GW+validator+SQS integration, worker Lambda+event source mapping, least-privilege IAM, full-stack synth check
 - [ ] Phase 5 — `worker` package, TDD (confirm Gap #2 dual-write approach with Neil first, then batch handler)
