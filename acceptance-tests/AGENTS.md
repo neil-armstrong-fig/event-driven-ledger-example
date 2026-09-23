@@ -59,11 +59,15 @@ load) and says nothing about why it failed.
 
 ## EventBridge assertion needs its own sink
 
-There's no way to query "was this event emitted" — the proven pattern (Phase 1 spike) is an EventBridge
-rule (`detail-type: ["KYC_PASSED_STUB"]`) targeting a temporary SQS queue, with a queue policy granting
-`events.amazonaws.com` send permission. **This sink must be deployed only behind a CDK context flag**,
+There's no way to query "was this event emitted", so an EventBridge rule (`detail-type:
+["KYC_PASSED_STUB"]`) stores every event in a DynamoDB table — via a one-state Step Functions state
+machine, so there is no handler code — keyed by `idempotencyKey` then the event's own id (two events for
+one key are both kept). Reading it consumes nothing and asks about one key only, so **specs can run in
+parallel without seeing each other's events**; that is why the sink is a table and not the queue it
+started as (a shared queue is consumed by whoever reads it, and its orphaned events crowd out real ones).
+**This sink must be deployed only behind a CDK context flag**,
 so it never ships in a real deployment. It is `LedgerEventSink` in `infra`, gated by
-`-c includeEventSink=true`, which also adds the `LedgerSinkQueueUrl` output the fixture reads —
+`-c includeEventSink=true`, which also adds the `LedgerSinkTableName` output the fixture reads —
 **`deploy:local` passes it; deploy without it and every spec fails at setup.** `LedgerStack.test.ts` asserts the flag gates
 it (verified by making the gate unconditional and watching the test fail).
 
@@ -74,8 +78,6 @@ it (verified by making the gate unconditional and watching the test fail).
   it `as then`. Do not "tidy" that back.
 - **Vitest fixtures need an object-destructuring first argument**, even one that depends on nothing —
   hence the `({}, use)` and its scoped `eslint-disable` in `AcceptanceTestFixtures`.
-- **`EventsClient` is the one counterpart that keeps state**: reading an SQS queue consumes its
-  messages, so what has been read is kept and every question answered from it. One `LedgerDsl` per spec.
 
 ## Running
 
@@ -88,7 +90,7 @@ docker run -d --rm --name ledger-localstack -p 127.0.0.1:4566:4566 -e LOCALSTACK
 pnpm --dir infra exec cdklocal bootstrap   # once per LocalStack container
 pnpm --dir infra deploy:local              # destroy, then a fresh deploy with the event sink
 pnpm acceptance-tests                      # the specs, against the deployed stack
-pnpm test                                  # Vitest for DSL helpers (Eventually, ParseKycPassedEvent); excludes src/tests/
+pnpm test                                  # Vitest for DSL helpers (Eventually); excludes src/tests/
 ```
 
 `deploy:local` **destroys first on purpose** — `infra/AGENTS.md`'s dev-loop gotcha: an incremental

@@ -26,7 +26,7 @@ src/
 │   └── LedgerIdempotencyTable.test.ts   DESTROY removal policy (own named assertion)
 ├── events/                           EventBridge
 │   ├── LedgerEventBus.ts             custom bus
-│   └── LedgerEventSink.ts            rule → SQS queue for acceptance tests; only with `-c includeEventSink=true`
+│   └── LedgerEventSink.ts            rule → state machine → table of events for acceptance tests; only with `-c includeEventSink=true`
 ├── api/                              API Gateway → SQS
 │   ├── LedgerApi.ts
 │   ├── LedgerApi.test.ts             Idempotency-Key header is required

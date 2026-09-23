@@ -55,9 +55,9 @@ exports[`the acceptance-test stack > synthesizes with no unnoticed resource or p
         ],
       },
     },
-    "LedgerSinkQueueUrl": {
+    "LedgerSinkTableName": {
       "Value": {
-        "Ref": "EventSinkQueue06ACFD02",
+        "Ref": "EventSinkTableD2255BE4",
       },
     },
     "LedgerTableName": {
@@ -328,63 +328,181 @@ $body",
         "Targets": [
           {
             "Arn": {
+              "Ref": "EventSinkStateMachine55D128CF",
+            },
+            "Id": "Target0",
+            "RoleArn": {
               "Fn::GetAtt": [
-                "EventSinkQueue06ACFD02",
+                "EventSinkStateMachineEventsRoleA4867B97",
                 "Arn",
               ],
             },
-            "Id": "Target0",
           },
         ],
       },
       "Type": "AWS::Events::Rule",
     },
-    "EventSinkQueue06ACFD02": {
+    "EventSinkStateMachine55D128CF": {
       "DeletionPolicy": "Delete",
-      "Type": "AWS::SQS::Queue",
+      "DependsOn": [
+        "EventSinkStateMachineRoleDefaultPolicyC7518B2F",
+        "EventSinkStateMachineRole4CE107F5",
+      ],
+      "Properties": {
+        "DefinitionString": {
+          "Fn::Join": [
+            "",
+            [
+              "{"StartAt":"StoreEvent","States":{"StoreEvent":{"End":true,"Type":"Task","Resource":"arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::dynamodb:putItem","Parameters":{"Item":{"idempotencyKey":{"S.$":"$.detail.idempotencyKey"},"eventId":{"S.$":"$.id"},"assetId":{"S.$":"$.detail.assetId"}},"TableName":"",
+              {
+                "Ref": "EventSinkTableD2255BE4",
+              },
+              ""}}}}",
+            ],
+          ],
+        },
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "EventSinkStateMachineRole4CE107F5",
+            "Arn",
+          ],
+        },
+        "StateMachineType": "STANDARD",
+      },
+      "Type": "AWS::StepFunctions::StateMachine",
       "UpdateReplacePolicy": "Delete",
     },
-    "EventSinkQueuePolicy46A86BDF": {
+    "EventSinkStateMachineEventsRoleA4867B97": {
       "Properties": {
-        "PolicyDocument": {
+        "AssumeRolePolicyDocument": {
           "Statement": [
             {
-              "Action": [
-                "sqs:SendMessage",
-                "sqs:GetQueueAttributes",
-                "sqs:GetQueueUrl",
-              ],
-              "Condition": {
-                "ArnEquals": {
-                  "aws:SourceArn": {
-                    "Fn::GetAtt": [
-                      "EventSinkKycPassedRule4879D05B",
-                      "Arn",
-                    ],
-                  },
-                },
-              },
+              "Action": "sts:AssumeRole",
               "Effect": "Allow",
               "Principal": {
                 "Service": "events.amazonaws.com",
               },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "EventSinkStateMachineEventsRoleDefaultPolicy94027B7D": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "states:StartExecution",
+              "Effect": "Allow",
               "Resource": {
-                "Fn::GetAtt": [
-                  "EventSinkQueue06ACFD02",
-                  "Arn",
+                "Ref": "EventSinkStateMachine55D128CF",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "EventSinkStateMachineEventsRoleDefaultPolicy94027B7D",
+        "Roles": [
+          {
+            "Ref": "EventSinkStateMachineEventsRoleA4867B97",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "EventSinkStateMachineRole4CE107F5": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "states.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "EventSinkStateMachineRoleDefaultPolicyC7518B2F": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:PutItem",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "arn:",
+                    {
+                      "Ref": "AWS::Partition",
+                    },
+                    ":dynamodb:",
+                    {
+                      "Ref": "AWS::Region",
+                    },
+                    ":",
+                    {
+                      "Ref": "AWS::AccountId",
+                    },
+                    ":table/",
+                    {
+                      "Ref": "EventSinkTableD2255BE4",
+                    },
+                  ],
                 ],
               },
             },
           ],
           "Version": "2012-10-17",
         },
-        "Queues": [
+        "PolicyName": "EventSinkStateMachineRoleDefaultPolicyC7518B2F",
+        "Roles": [
           {
-            "Ref": "EventSinkQueue06ACFD02",
+            "Ref": "EventSinkStateMachineRole4CE107F5",
           },
         ],
       },
-      "Type": "AWS::SQS::QueuePolicy",
+      "Type": "AWS::IAM::Policy",
+    },
+    "EventSinkTableD2255BE4": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "idempotencyKey",
+            "AttributeType": "S",
+          },
+          {
+            "AttributeName": "eventId",
+            "AttributeType": "S",
+          },
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "idempotencyKey",
+            "KeyType": "HASH",
+          },
+          {
+            "AttributeName": "eventId",
+            "KeyType": "RANGE",
+          },
+        ],
+      },
+      "Type": "AWS::DynamoDB::Table",
+      "UpdateReplacePolicy": "Delete",
     },
     "IdempotencyTableE9369C9C": {
       "DeletionPolicy": "Delete",

@@ -23,7 +23,8 @@ describe("the production stack", () => {
 
   it("does not deploy the acceptance-test event sink, so it never ships in a real deployment", () => {
     template.resourceCountIs("AWS::Events::Rule", 0);
-    expect(outputNames(template)).not.toContain(LEDGER_STACK_OUTPUTS.sinkQueueUrl);
+    template.resourceCountIs("AWS::DynamoDB::Table", 1);
+    expect(outputNames(template)).not.toContain(LEDGER_STACK_OUTPUTS.sinkTableName);
   });
 });
 
@@ -34,8 +35,18 @@ describe("the acceptance-test stack", () => {
     expect(normalizeAssetHashes(template.toJSON())).toMatchSnapshot();
   });
 
-  it("delivers KYC_PASSED_STUB events to a sink the acceptance tests can read", () => {
+  it("delivers KYC_PASSED_STUB events to a sink that stores them", () => {
     template.hasResourceProperties("AWS::Events::Rule", {EventPattern: {"detail-type": ["KYC_PASSED_STUB"]}});
+  });
+
+  it("keeps every event under its idempotency key, so a duplicate does not overwrite the first", () => {
+    // The acceptance tests' `EventsClient` queries by this key schema; the sort key is the event's own id.
+    template.hasResourceProperties("AWS::DynamoDB::Table", {
+      KeySchema: [
+        {AttributeName: "idempotencyKey", KeyType: "HASH"},
+        {AttributeName: "eventId", KeyType: "RANGE"},
+      ],
+    });
   });
 
   it("provides every output the acceptance tests read", () => {

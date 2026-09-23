@@ -38,7 +38,7 @@ export const test = base.extend<AcceptanceTestFixtures & EndpointsFixtures>({
     {scope: "file"},
   ],
 
-  // A new DSL per spec, because reading the sink queue consumes its messages.
+  // A new DSL per spec, so no spec can see another's state.
   ledger: async ({endpoints}, use) => {
     await use(new LedgerDsl(endpoints));
   },

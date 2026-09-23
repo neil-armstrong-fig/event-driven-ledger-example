@@ -26,8 +26,6 @@ catalog:
   "@aws-sdk/client-dynamodb": 3.1137.0
   # The worker's EventBridge client — PutEvents for KYC_PASSED_STUB.
   "@aws-sdk/client-eventbridge": 3.1137.0
-  # The acceptance specs' SQS client — drains the EventBridge sink queue to assert emitted events.
-  "@aws-sdk/client-sqs": 3.1137.0
   # ESLint's own recommended rule set, pulled in by shared's baseConfig for every package.
   "@eslint/js": 10.0.1
   # Type-only defs for shared's LEDGER_REQUEST_SCHEMA (the API GW request validator's JSON Schema).

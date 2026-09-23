@@ -16,7 +16,6 @@
   "dependencies": {
     "@aws-sdk/client-cloudformation": "catalog:",
     "@aws-sdk/client-dynamodb": "catalog:",
-    "@aws-sdk/client-sqs": "catalog:",
     "@ledger/shared": "workspace:*"
   },
   "devDependencies": {

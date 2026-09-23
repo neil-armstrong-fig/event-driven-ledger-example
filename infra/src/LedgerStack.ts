@@ -33,7 +33,7 @@ export class LedgerStack extends Stack {
 
     if (isSet(this.node.tryGetContext("includeEventSink"))) {
       this.eventSink = new LedgerEventSink(this, "EventSink", {bus: this.eventBus.bus});
-      new CfnOutput(this, LEDGER_STACK_OUTPUTS.sinkQueueUrl, {value: this.eventSink.queue.queueUrl});
+      new CfnOutput(this, LEDGER_STACK_OUTPUTS.sinkTableName, {value: this.eventSink.table.tableName});
     }
 
     // Read by acceptance-tests (aws/stack/ReadStackOutputs.ts) to find the deployed resources.
