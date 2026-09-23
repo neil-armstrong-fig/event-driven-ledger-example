@@ -24,6 +24,8 @@ catalog:
   # Held at the Node 24 major to match the pinned runtime (.nvmrc, engines.node) rather than the
   # current latest (26.6.2) — a newer major would type against Node APIs this project doesn't run.
   "@types/node": 24.13.6
+  aws-cdk-lib: 2.270.0
+  constructs: 10.8.1
   eslint: 10.11.0
   eslint-config-prettier: 10.1.8
   globals: 17.12.0

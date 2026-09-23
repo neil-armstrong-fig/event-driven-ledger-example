@@ -13,7 +13,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@ledger/shared": "workspace:*"
+    "@ledger/shared": "workspace:*",
+    "aws-cdk-lib": "catalog:",
+    "constructs": "catalog:"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",

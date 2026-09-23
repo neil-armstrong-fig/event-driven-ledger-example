@@ -1,11 +1,14 @@
 # AGENTS.md — infra
 
 The CDK app: stacks and constructs that deploy the worker's _built artifact_ — never imports its
-source — see the root `AGENTS.md` package table. **No `bin/`/`lib/`/`test/` yet.** This is Phase 4,
-built one resource at a time, 7 stops, each with its assertion (and eventually a snapshot) alongside
-the construct code — see `docs/PLAN.md` Phase 4 for the exact resource order: (1) FIFO queue + FIFO
-DLQ, (2) DynamoDB table, (3) EventBridge custom bus, (4) API GW + validator + direct SQS integration,
-(5) worker Lambda + event source mapping, (6) least-privilege IAM, (7) full-stack synth check.
+source — see the root `AGENTS.md` package table. `src/` holds `LedgerStack.ts` (the real deployable
+stack) plus one subject-named subfolder per resource (`queue/`, etc.), each with its test file
+colocated right beside it — same convention as every other package, no separate `test/` folder. **No
+`bin/` yet** (needed once a real `cdk synth`/`cdk deploy` CLI run is exercised, at Phase 4 step 7).
+Built one resource at a time, 7 stops, each with the `LedgerStack` snapshot updated alongside the
+construct code — see `docs/PLAN.md` Phase 4 for the exact resource order: (1) FIFO queue + FIFO DLQ,
+(2) DynamoDB table, (3) EventBridge custom bus, (4) API GW + validator + direct SQS integration, (5)
+worker Lambda + event source mapping, (6) least-privilege IAM, (7) full-stack `cdk synth` via the CLI.
 
 ## Import boundary
 
@@ -45,9 +48,18 @@ update is safe to test against, even for a change that looks trivial. This does 
   of the request body, `Idempotency-Key` goes in as `MessageAttribute.1.*`, never spliced into the JSON
   body. The message-attribute approach is a hard requirement, not a style choice — see the root
   `AGENTS.md` gotchas for the VTL parse error that ruled out body-splicing.
-- **CDK output is tested too.** Fine-grained `aws-cdk-lib/assertions` `Template` assertions (FIFO +
-  dedup config, validator attached, `MessageGroupId` in the VTL, least-privilege role,
-  `ReportBatchItemFailures`, FIFO DLQ) plus a snapshot test — but normalize Lambda asset hashes/`S3Key`s
-  out of the serializer first, or every snapshot diff trains people to blindly run `-u`.
+- **CDK output is tested by snapshot, not itemized assertions.** Neil's call: fine-grained
+  `hasResourceProperties` checks per resource are too restrictive against ordinary TypeScript
+  refactors — the goal is catching a _sneaky_ rename/property change a refactor introduced by
+  accident, not pinning every property by hand. One `toMatchSnapshot()` of `Template.fromStack(new
+LedgerStack(...)).toJSON()` — the real stack, not a per-construct test-only stack, since only the
+  real stack's logical IDs reflect an actual accidental-replacement risk — does this: it fails with a
+  reviewable diff on any resource addition/removal/rename/property change. Verified this actually
+  catches a rename (not just a hypothetical): renaming a construct's mount id changes its
+  CloudFormation logical ID hash, which shows up as a full resource replacement in the diff. Reach for
+  a fine-grained assertion only when a specific property is important enough to deserve its own named
+  failure message. Normalize Lambda asset hashes/`S3Key`s out of the serializer once a Lambda exists,
+  or every snapshot diff trains people to blindly run `-u`. The `.snap` file must be committed —
+  Vitest only fails on a _missing_ snapshot, so an uncommitted one gives zero protection.
 - **LocalStack Hobby tier has no official CI support** — flagged as a risk to accept or work around at
   Phase 7, not this phase.
