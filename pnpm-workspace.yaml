@@ -30,6 +30,8 @@ catalog:
   aws-cdk-lib: 2.270.0
   # The CDK constructs framework aws-cdk-lib itself requires as a peer.
   constructs: 10.8.1
+  # Bundles the worker Lambda at CDK synth (NodejsFunction) so synth needs no Docker.
+  esbuild: 0.28.2
   # The linter every package runs via `pnpm lint`.
   eslint: 10.11.0
   # Turns off ESLint rules that conflict with Prettier's formatting.
@@ -44,3 +46,9 @@ catalog:
   typescript-eslint: 8.70.1
   # The test runner every package's `test`/`checks` script runs.
   vitest: 5.0.1
+
+# pnpm blocks dependency install scripts unless explicitly decided here. esbuild's postinstall only
+# sanity-checks its platform binary (which arrives via optionalDependencies), so it's denied —
+# verified `esbuild --version` and CDK bundling work without it.
+allowBuilds:
+  esbuild: false

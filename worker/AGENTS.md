@@ -1,7 +1,7 @@
 # AGENTS.md — worker
 
 The SQS-batch Lambda handler: wires `domain`'s pure logic to real AWS SDK calls — see the root
-`AGENTS.md` package table. **No `src/` yet.** This package is built at Phase 5, after `domain`
+`AGENTS.md` package table. `src/` holds only a placeholder `HandleLedgerBatch.ts` (returns no failures) so `infra` has an entry to bundle; Phase 5 replaces it test-first. This package is built at Phase 5, after `domain`
 (Phase 3) and `infra` (Phase 4) both exist — the handler needs `domain`'s idempotency/event-shaping
 functions and needs `infra`'s resource shapes (queue, table, bus) settled first.
 

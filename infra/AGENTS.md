@@ -15,9 +15,11 @@ worker Lambda + event source mapping, (6) least-privilege IAM, (7) full-stack `c
 `eslint.config.js`: `allowedPackages: ["@ledger/shared"]` only. **Never import `@ledger/worker` or
 `@ledger/domain` source** — deny-by-default means both are refused simply by being left out. Per the
 root `AGENTS.md` package table, this package "deploys the worker's built artifact — never imports its
-source." Exactly how that artifact gets built — `NodejsFunction`'s `entry` pointing at `worker`'s
-source for esbuild to bundle, vs. some other build step — is a Phase 4 step 5 decision, not yet made;
-don't assume the esbuild-bundles-source-directly shape until that step confirms it.
+source." Decided at Phase 4 step 5: `NodejsFunction`'s `entry` points at a `worker/src/` file by path
+(never a TypeScript import) and esbuild bundles it at synth. Because `Template.fromStack` in the
+snapshot test synthesizes for real, a worker that can't be found or bundled fails `pnpm checks` (and so
+the CI gate) — verified with a missing `entry`. esbuild doesn't type-check; `worker`'s own `type-check`
+does.
 
 ## THE local dev-loop gotcha — read before running anything against LocalStack
 
@@ -58,8 +60,8 @@ LedgerStack(...)).toJSON()` — the real stack, not a per-construct test-only st
   catches a rename (not just a hypothetical): renaming a construct's mount id changes its
   CloudFormation logical ID hash, which shows up as a full resource replacement in the diff. Reach for
   a fine-grained assertion only when a specific property is important enough to deserve its own named
-  failure message. Normalize Lambda asset hashes/`S3Key`s out of the serializer once a Lambda exists,
-  or every snapshot diff trains people to blindly run `-u`. The `.snap` file must be committed —
+  failure message. The Lambda asset `S3Key` hash is normalized out in `LedgerStack.test.ts`,
+  so a worker code change doesn't churn the snapshot and train people to blindly run `-u`. The `.snap` file must be committed —
   Vitest only fails on a _missing_ snapshot, so an uncommitted one gives zero protection.
 - **LocalStack Hobby tier has no official CI support** — flagged as a risk to accept or work around at
   Phase 7, not this phase.
