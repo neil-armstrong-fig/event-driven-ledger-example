@@ -1,6 +1,8 @@
 import path from "node:path";
 
 import {Duration} from "aws-cdk-lib";
+import type {ITable} from "aws-cdk-lib/aws-dynamodb";
+import type {IEventBus} from "aws-cdk-lib/aws-events";
 import {Runtime} from "aws-cdk-lib/aws-lambda";
 import {NodejsFunction} from "aws-cdk-lib/aws-lambda-nodejs";
 import {SqsEventSource} from "aws-cdk-lib/aws-lambda-event-sources";
@@ -14,12 +16,14 @@ const BATCH_SIZE = 5;
 
 interface LedgerWorkerProps {
   queue: IQueue;
+  table: ITable;
+  eventBus: IEventBus;
 }
 
 export class LedgerWorker extends Construct {
   public readonly function: NodejsFunction;
 
-  constructor(scope: Construct, id: string, {queue}: LedgerWorkerProps) {
+  constructor(scope: Construct, id: string, {queue, table, eventBus}: LedgerWorkerProps) {
     super(scope, id);
 
     // Bundled from the worker's source by esbuild at synth — infra never imports it in TypeScript.
@@ -28,7 +32,16 @@ export class LedgerWorker extends Construct {
       handler: "handleLedgerBatch",
       runtime: Runtime.NODEJS_22_X,
       timeout: Duration.seconds(30),
+      environment: {
+        LEDGER_TABLE_NAME: table.tableName,
+        LEDGER_EVENT_BUS_NAME: eventBus.eventBusName,
+      },
     });
+
+    // Least privilege: the worker only ever conditionally puts one item, so not grantWriteData
+    // (which would also allow update/delete/batch-write).
+    table.grant(this.function, "dynamodb:PutItem");
+    eventBus.grantPutEventsTo(this.function);
 
     // reportBatchItemFailures lets the worker fail individual messages instead of the whole batch.
     this.function.addEventSource(new SqsEventSource(queue, {batchSize: BATCH_SIZE, reportBatchItemFailures: true}));

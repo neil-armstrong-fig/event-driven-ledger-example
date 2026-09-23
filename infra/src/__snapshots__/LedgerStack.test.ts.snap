@@ -336,6 +336,16 @@ $body",
           },
           "S3Key": "<asset-hash>.zip",
         },
+        "Environment": {
+          "Variables": {
+            "LEDGER_EVENT_BUS_NAME": {
+              "Ref": "EventBusEEC924FB",
+            },
+            "LEDGER_TABLE_NAME": {
+              "Ref": "IdempotencyTableE9369C9C",
+            },
+          },
+        },
         "Handler": "index.handleLedgerBatch",
         "Role": {
           "Fn::GetAtt": [
@@ -383,6 +393,28 @@ $body",
       "Properties": {
         "PolicyDocument": {
           "Statement": [
+            {
+              "Action": "dynamodb:PutItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "IdempotencyTableE9369C9C",
+                    "Arn",
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "events:PutEvents",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EventBusEEC924FB",
+                  "Arn",
+                ],
+              },
+            },
             {
               "Action": [
                 "sqs:ReceiveMessage",

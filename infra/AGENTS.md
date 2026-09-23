@@ -3,12 +3,11 @@
 The CDK app: stacks and constructs that deploy the worker's _built artifact_ — never imports its
 source — see the root `AGENTS.md` package table. `src/` holds `LedgerStack.ts` (the real deployable
 stack) plus one subject-named subfolder per resource (`queue/`, etc.), each with its test file
-colocated right beside it — same convention as every other package, no separate `test/` folder. **No
-`bin/` yet** (needed once a real `cdk synth`/`cdk deploy` CLI run is exercised, at Phase 4 step 7).
+colocated right beside it — same convention as every other package, no separate `test/` folder. `bin/App.ts` is the CDK CLI entry (`cdk.json` runs it via `tsx`); `pnpm synth` runs a real `cdk synth`, outside `checks`.
 Built one resource at a time, 7 stops, each with the `LedgerStack` snapshot updated alongside the
 construct code — see `docs/PLAN.md` Phase 4 for the exact resource order: (1) FIFO queue + FIFO DLQ,
 (2) DynamoDB table, (3) EventBridge custom bus, (4) API GW + validator + direct SQS integration, (5)
-worker Lambda + event source mapping, (6) least-privilege IAM, (7) full-stack `cdk synth` via the CLI.
+worker Lambda + event source mapping, (6) least-privilege IAM, (7) full-stack `cdk synth` via the CLI — all done.
 
 ## Import boundary
 
@@ -20,6 +19,19 @@ source." Decided at Phase 4 step 5: `NodejsFunction`'s `entry` points at a `work
 snapshot test synthesizes for real, a worker that can't be found or bundled fails `pnpm checks` (and so
 the CI gate) — verified with a missing `entry`. esbuild doesn't type-check; `worker`'s own `type-check`
 does.
+
+## `bin/App.ts` only creates the App and the stacks
+
+It is the CDK CLI entry, so it stays as close to empty as possible: `import {App} from "aws-cdk-lib"`,
+`const app = new App()`, and one `new XStack(app, "XStack")` per stack. No config, env vars, tags,
+conditionals or calls — every decision lives inside a stack, where the snapshot test can see it, and
+`bin/` is not covered by tests. Need a value in there? Give the stack a prop or put the logic in the
+stack. This is enforced by an override in `eslint.config.js`, not left to memory: imports are denied
+by default (only `App` from `aws-cdk-lib` and `@src/*Stack` are re-allowed — never other `@src/*`
+files, `aws-cdk-lib` subpaths or relative paths), only imports/`const`/expression statements are
+allowed at the top level, calls/conditionals/logical expressions and `process.env` are banned, and
+`max-lines` is 15. If lint blocks a change here, move the code into a stack rather than loosening
+the rule.
 
 ## THE local dev-loop gotcha — read before running anything against LocalStack
 
@@ -50,7 +62,7 @@ update is safe to test against, even for a change that looks trivial. This does 
   of the request body, `Idempotency-Key` goes in as `MessageAttribute.1.*`, never spliced into the JSON
   body. The message-attribute approach is a hard requirement, not a style choice — see the root
   `AGENTS.md` gotchas for the VTL parse error that ruled out body-splicing.
-- **CDK output is tested by snapshot, not itemized assertions.** Neil's call: fine-grained
+- **CDK output is tested by snapshot, not itemized assertions.** The developer's call: fine-grained
   `hasResourceProperties` checks per resource are too restrictive against ordinary TypeScript
   refactors — the goal is catching a _sneaky_ rename/property change a refactor introduced by
   accident, not pinning every property by hand. One `toMatchSnapshot()` of `Template.fromStack(new

@@ -21,6 +21,10 @@ export class LedgerStack extends Stack {
     this.idempotencyTable = new LedgerIdempotencyTable(this, "IdempotencyTable");
     this.eventBus = new LedgerEventBus(this, "EventBus");
     this.api = new LedgerApi(this, "Api", {queue: this.requestQueue.queue});
-    this.worker = new LedgerWorker(this, "Worker", {queue: this.requestQueue.queue});
+    this.worker = new LedgerWorker(this, "Worker", {
+      queue: this.requestQueue.queue,
+      table: this.idempotencyTable.table,
+      eventBus: this.eventBus.bus,
+    });
   }
 }

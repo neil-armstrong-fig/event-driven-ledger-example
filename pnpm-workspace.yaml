@@ -26,6 +26,8 @@ catalog:
   "@types/json-schema": 7.0.15
   # Node type defs — held at the Node 24 major to match the pinned runtime, not the latest major.
   "@types/node": 24.13.6
+  # The CDK CLI (`cdk synth`) — its own version line, independent of aws-cdk-lib's.
+  aws-cdk: 2.1142.0
   # The CDK L2 construct library infra's stacks and constructs are built on.
   aws-cdk-lib: 2.270.0
   # The CDK constructs framework aws-cdk-lib itself requires as a peer.
@@ -40,6 +42,8 @@ catalog:
   globals: 17.12.0
   # The formatter every package runs via `pnpm format` — 3.9.9 (latest) failed minimumReleaseAgeStrict.
   prettier: 3.9.6
+  # Runs the CDK app entry (bin/App.ts) for the CLI — esbuild-based, so unaffected by TS7 breaking ts-node.
+  tsx: 4.23.15
   # The compiler — pinned below latest since TS7's native compiler breaks ts-node's API (Phase 1 spike).
   typescript: 6.0.3
   # TypeScript-aware ESLint parser and rules, pulled in by shared's baseConfig for every package.

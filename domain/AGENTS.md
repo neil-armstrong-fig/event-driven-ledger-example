@@ -25,7 +25,7 @@ means the test picks the shape, not the other way round.
 Per the root `AGENTS.md`: red, then green, then move on. Concretely for Phase 3:
 
 1. Idempotency-key handling — write the failing test for header/message-attribute extraction and
-   shape first, watch it fail for the right reason, show it to Neil before implementing.
+   shape first, watch it fail for the right reason, show it to the developer before implementing.
 2. `KYC_PASSED_STUB` event payload builder — same red→green cycle, separately.
 
 The two named gaps in `docs/PLAN.md` (dedup-vs-idempotency, dual-write) are exactly the kind of edge

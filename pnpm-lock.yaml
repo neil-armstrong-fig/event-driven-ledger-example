@@ -116,6 +116,9 @@ catalogs:
     '@types/node':
       specifier: 24.13.6
       version: 24.13.6
+    aws-cdk:
+      specifier: 2.1142.0
+      version: 2.1142.0
     aws-cdk-lib:
       specifier: 2.270.0
       version: 2.270.0
@@ -137,6 +140,9 @@ catalogs:
     prettier:
       specifier: 3.9.6
       version: 3.9.6
+    tsx:
+      specifier: 4.23.15
+      version: 4.23.15
     typescript:
       specifier: 6.0.3
       version: 6.0.3
@@ -237,6 +243,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.6
+      aws-cdk:
+        specifier: 'catalog:'
+        version: 2.1142.0
       esbuild:
         specifier: 'catalog:'
         version: 0.28.2
@@ -252,6 +261,9 @@ importers:
       prettier:
         specifier: 'catalog:'
         version: 3.9.6
+      tsx:
+        specifier: 'catalog:'
+        version: 4.23.15
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -816,6 +828,11 @@ packages:
       - yaml
       - mime-types
 
+  aws-cdk@2.1142.0:
+    resolution: {integrity: sha512-gNOeii+avTJmOwfR8tVgraZ5A2EBC/529EXg7e+yBp8Zl608dAv5CtFRoJt8QoKiruiCwYr4HF6ClNAse/NkSg==}
+    engines: {node: '>= 18.0.0'}
+    hasBin: true
+
   balanced-match@4.0.4:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
@@ -1207,6 +1224,11 @@ packages:
     engines: {node: '>=18.12'}
     peerDependencies:
       typescript: '>=4.8.4'
+
+  tsx@4.23.15:
+    resolution: {integrity: sha512-Yiex1Ovn8z2xPpOWckIiysV1SSyRMY9BkLF++q0yKiDxCqRhosKfMg3janKkiLBwZ5c/YryloKwGZcrEmtwxKw==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -1661,7 +1683,7 @@ snapshots:
       estree-walker: 3.0.3
       magic-string: 1.4.1
     optionalDependencies:
-      vite: 8.3.0(@types/node@24.13.6)(esbuild@0.28.2)
+      vite: 8.3.0(@types/node@24.13.6)(esbuild@0.28.2)(tsx@4.23.15)
 
   '@vitest/spy@5.0.1': {}
 
@@ -1686,6 +1708,8 @@ snapshots:
       '@aws-cdk/asset-node-proxy-agent-v6': 2.1.3
       '@aws-cdk/cloud-assembly-schema': 54.24.0
       constructs: 10.8.1
+
+  aws-cdk@2.1142.0: {}
 
   balanced-match@4.0.4: {}
 
@@ -2057,6 +2081,12 @@ snapshots:
     dependencies:
       typescript: 6.0.3
 
+  tsx@4.23.15:
+    dependencies:
+      esbuild: 0.28.2
+    optionalDependencies:
+      fsevents: 2.3.3
+
   type-check@0.4.0:
     dependencies:
       prelude-ls: 1.2.1
@@ -2080,7 +2110,7 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.2):
+  vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.2)(tsx@4.23.15):
     dependencies:
       lightningcss: 1.33.0
       picomatch: 4.0.7
@@ -2091,6 +2121,7 @@ snapshots:
       '@types/node': 24.13.6
       esbuild: 0.28.2
       fsevents: 2.3.3
+      tsx: 4.23.15
 
   vitest@5.0.1(@types/node@24.13.6)(vite@8.3.0(@types/node@24.13.6)):
     dependencies:
@@ -2106,7 +2137,7 @@ snapshots:
       tinybench: 6.1.4
       tinyexec: 1.3.0
       tinyglobby: 0.2.17
-      vite: 8.3.0(@types/node@24.13.6)(esbuild@0.28.2)
+      vite: 8.3.0(@types/node@24.13.6)(esbuild@0.28.2)(tsx@4.23.15)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 24.13.6

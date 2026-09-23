@@ -15,7 +15,7 @@ pure/testable-without-AWS to `domain` instead of duplicating it inline.
 
 ## Phase 5 — stop-and-confirm before writing any test
 
-Per `docs/PLAN.md` and `TODO.md`, **step 1 of this phase is a decision, not code**: confirm with Neil
+Per `docs/PLAN.md` and `TODO.md`, **step 1 of this phase is a decision, not code**: confirm with the developer
 the dual-write approach for Gap #2 before writing a single test.
 
 - **Gap #2 (dual-write)**: on `ConditionalCheckFailedException` from the DynamoDB conditional write,

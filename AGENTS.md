@@ -4,7 +4,9 @@ This file governs how any AI agent (Claude, Codex, or otherwise) works in this r
 
 ## Git — hard rule
 
-**Never run `git add`, `git commit`, `git push`, or any command that stages/commits/pushes.** Neil commits everything himself, always. This applies even if a task seems to naturally end with "and commit it" — it doesn't, here. Leave changes unstaged and tell him what changed; he decides when and how to commit. The one exception already made: `git init` and the very first `.gitignore` commit, done with his explicit real-time approval in chat — that precedent does not extend to anything else.
+**Never run `git add`, `git commit`, `git push`, or any command that stages/commits/pushes.** The developer commits everything, always. This applies even if a task seems to naturally end with "and commit it" — it doesn't, here. Leave changes unstaged and tell the developer what changed; they decide when and how to commit. The one exception already made: `git init` and the very first `.gitignore` commit, done with the developer's explicit real-time approval in chat — that precedent does not extend to anything else.
+
+The developer stages files while reviewing them, so `git status` will show files randomly staged while work is in progress. That is not a signal of anything — treat everything as unstaged and don't flag it.
 
 Also never: create/switch/delete branches, force-push, `git reset --hard`, or any other history-rewriting or remote-affecting operation, without being asked in that specific instance.
 
@@ -25,7 +27,7 @@ Import boundaries are enforced by ESLint `no-restricted-imports`, deny-by-defaul
 ## Before changing code
 
 1. Read every `AGENTS.md` on the path to the file you're touching — root, then package, then any nested one.
-2. Read `docs/PLAN.md` and `TODO.md` to confirm what phase/step you're actually on. This project is being built in explicit, numbered, stop-after-each-step phases at Neil's request — do not skip ahead or batch multiple steps into one turn of work, regardless of which tool is driving.
+2. Read `docs/PLAN.md` and `TODO.md` to confirm what phase/step you're actually on. This project is being built in explicit, numbered, stop-after-each-step phases at the developer's request — do not skip ahead or batch multiple steps into one turn of work, regardless of which tool is driving.
 3. Inspect the nearest existing implementation or test for local convention. If there isn't one yet (early phases), say so explicitly rather than inventing a convention silently.
 4. State which instruction files and reference implementations you used before editing.
 5. Before calling anything finished, re-read the relevant `AGENTS.md` and do a standards-only pass over your own diff — catch what lint/tests can't.
@@ -79,6 +81,10 @@ No wrapper `describe` in unit test files — the filename already names the sing
 - Lambda runtime: use `nodejs22.x` or newer — `nodejs20.x` is already flagged deprecated.
 - `esbuild` must be a devDependency wherever `NodejsFunction` is used, so CDK synth bundles without needing Docker (LocalStack's own Lambda *execution* still needs the Docker socket mounted — that's a separate, required thing).
 - `LOCALSTACK_AUTH_TOKEN` lives in a gitignored `.env` at the repo root — load it (`set -a; source .env; set +a`) before any command that talks to LocalStack. Never print it or commit it.
+
+## Where lessons go
+
+When the developer gives a correction or preference worth keeping, write it into the relevant `AGENTS.md` (root for repo-wide, package-level for package-specific), not into an agent's private memory — other agents (Codex, etc.) can't read that, and this file is the shared source of truth.
 
 ## Keeping context small
 
