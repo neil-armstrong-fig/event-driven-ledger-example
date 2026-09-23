@@ -68,6 +68,7 @@ export function baseConfig({tsconfigRootDir, allowedPackages = []} = {}) {
         "no-multiple-empty-lines": ["error", {max: 1}],
         "no-console": ["warn", {allow: ["warn", "error"]}],
         "@typescript-eslint/consistent-type-imports": "error",
+        "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
         "@typescript-eslint/explicit-function-return-type": ["error", {allowExpressions: true}],
         "@typescript-eslint/explicit-module-boundary-types": ["error", {allowArgumentsExplicitlyTypedAsAny: true}],
         "@typescript-eslint/no-use-before-define": "off",

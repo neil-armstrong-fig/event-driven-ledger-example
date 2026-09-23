@@ -51,6 +51,7 @@ No wrapper `describe` in unit test files — the filename already names the sing
 - A file lives as close to its caller as possible, rising only to the nearest common ancestor.
 - Name folders for subject, not shape (`idempotency/`, not `helpers/` or `utils/`).
 - Every type gets a name — no inline object/union types except a function's own narrow parameter-object type.
+- `interface` for object shapes, not `type` — `type` is for unions/primitive aliases/anything `interface` can't express. Enforced by ESLint (`@typescript-eslint/consistent-type-definitions`).
 - Max 3 positional parameters, otherwise a named options object.
 - Explicit function return types; `import type` for type-only imports.
 - Prefer named `export function` over `export default`.
