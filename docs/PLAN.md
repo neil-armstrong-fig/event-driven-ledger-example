@@ -25,7 +25,7 @@ Conventions adopted for this repo:
 - ESLint-enforced import boundaries (`no-restricted-imports`, deny-by-default per package) instead of code-review-enforced ones.
 - One export per file, named for its export, PascalCase.
 - Folders named for subject, not shape (`idempotency/` not `helpers/`).
-- ATDD via a DSL split into business vocabulary (`dsl/*Dsl.ts` — Action/Question/Query naming) vs. mechanics (`aws/*Client.ts` here).
+- ATDD in janggi's four layers (tests → acceptance-criteria-mapping → dsl → shared): each DSL object is a `*Dsl` (business vocabulary — Action/Question/Query naming) paired with a `*Client` in an `aws/` folder beside it (the mechanics). See `acceptance-tests/AGENTS.md`.
 - Unit tests: **no wrapper `describe`** — flat `it(...)`, filename names the single export under test; nested `describe`s only for states that build on each other (see root `AGENTS.md`). Acceptance specs: nested `given`/`when`/`then` **is** the specification (opposite rule, deliberately).
 - A hard CI gate (`pnpm checks` = lint+format+typecheck+unit) kept separate from slower/flakier non-gating workflows.
 - "A passing test proves nothing until you've watched it fail" — mutation-testing-as-a-habit, written down as practice even without a dedicated tool.
@@ -74,7 +74,7 @@ event-driven-ledger/
 └── .github/workflows/             # ci.yml (gating) — acceptance run against LocalStack service container — NOT YET WRITTEN
 ```
 
-Import boundaries (ESLint `no-restricted-imports`, deny-by-default): `shared` → nothing; `domain` → `shared` only, **no `@aws-sdk/*`, no `aws-cdk-lib`**; `worker` → `domain` + `shared`; `infra` → `shared` only (never imports `domain`/`worker` source — it *deploys* the worker's built artifact); `acceptance-tests` → `shared` only, plus its own `aws/*Client.ts` for SDK calls, never AWS SDK inside `dsl/*`.
+Import boundaries (ESLint `no-restricted-imports`, deny-by-default): `shared` → nothing; `domain` → `shared` only, **no `@aws-sdk/*`, no `aws-cdk-lib`**; `worker` → `domain` + `shared`; `infra` → `shared` only (never imports `domain`/`worker` source — it *deploys* the worker's built artifact); `acceptance-tests` → `shared` only; the AWS SDK and `fetch` are allowed only inside `aws/` folders, never in a `*Dsl` or a spec.
 
 ## Testing pyramid
 
@@ -84,7 +84,7 @@ Import boundaries (ESLint `no-restricted-imports`, deny-by-default): `shared` �
 | CDK output (regression) | Vitest + `aws-cdk-lib/assertions` | `infra/src/**/*.test.ts`, colocated with the construct/stack like every other package (no separate `test/` folder) | one `toMatchSnapshot()` of the synthesized `LedgerStack` template (Lambda asset hashes/`S3Key`s normalized out once a Lambda exists) — catches a resource rename/removal or property drift from a TypeScript refactor as a reviewable diff, without the brittleness of itemized `hasResourceProperties` checks. Reach for a fine-grained assertion only for one specific invariant that deserves its own named failure message, not as the default per resource |
 | Acceptance (ATDD) | plain HTTP/AWS-SDK clients + custom DSL, run against LocalStack | `acceptance-tests/src/**` | the real event-driven physics end-to-end: 202 → SQS → Lambda → conditional DynamoDB write → EventBridge emission |
 
-DSL shape: `dsl/LedgerDsl.ts` (business vocabulary only — `submitFractionalizationRequest`, `theRecordExists`, `theEventWasEmitted`; Action/Question/Query naming) wrapping `aws/LedgerApiClient.ts` + `aws/LedgerAwsResourcesClient.ts` (actual `fetch`/AWS-SDK calls, real errors propagate raw). "Waits briefly" becomes an `eventually(poll, timeout)` helper, not a fixed `sleep`. EventBridge assertion needs a sink (rule → SQS queue) — **confirmed working pattern, see Phase 1 results** — deployed only behind a CDK context flag so it never ships in a real deployment.
+DSL shape: `dsl/ledger/LedgerDsl.ts` with members `requests`, `records`, `events` (business vocabulary only — `submit`, `waitForRecord`, `isRecorded`, `getKycPassedEventsFor`; Action/Question/Query naming), each paired with a `*Client` in an `aws/` folder beside it (actual `fetch`/AWS-SDK calls, real errors propagate raw). "Waits briefly" becomes an `eventually(poll, timeout)` helper used inside the clients, not a fixed `sleep`. EventBridge assertion needs a sink (rule → SQS queue) — **confirmed working pattern, see Phase 1 results** — deployed only behind a CDK context flag so it never ships in a real deployment.
 
 ---
 
@@ -151,8 +151,8 @@ Each of these is its own stop, with the `LedgerStack` snapshot updated alongside
 3. Implementation to green, including FIFO partial-batch-failure semantics (fail every later message in the same group once one fails, per `reportBatchItemFailures` FIFO rules). **STOP.**
 
 ### Phase 6 — `acceptance-tests` package
-1. `aws/*Client.ts` wrappers (real SDK/fetch calls) + `eventually()` poller — reviewed before the DSL is built on top. **STOP.**
-2. `dsl/LedgerDsl.ts` business-vocabulary layer. **STOP.**
+1. The `*Client` wrappers (real SDK/fetch calls) + `eventually()` poller — reviewed before the DSL is built on top. **STOP.**
+2. `dsl/ledger/` — the `*Dsl` business-vocabulary layer over them, plus the acceptance-criteria-mapping. **STOP.**
 3. Happy-path given/when/then spec, run red against a deployed LocalStack stack, then green. **STOP.**
 4. Double-spend given/when/then spec (same `Idempotency-Key`, differing body field — exactly one record, exactly one event), red then green — **the exact scenario already proven manually in Phase 1**, now automated. **STOP.**
 5. EventBridge sink-under-context-flag reviewed to confirm it never ships in a real deployment — **use the proven rule+SQS-target pattern from Phase 1**. **STOP.**

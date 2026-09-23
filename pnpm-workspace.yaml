@@ -20,16 +20,22 @@ catalogMode: strict
 minimumReleaseAgeStrict: true
 
 catalog:
-  # The worker's DynamoDB client — the conditional PutItem that enforces idempotency.
+  # The acceptance specs' CloudFormation client — reads the deployed stack's outputs (API URL, table name).
+  "@aws-sdk/client-cloudformation": 3.1137.0
+  # The DynamoDB client — the worker's conditional PutItem, and the acceptance specs' record lookup.
   "@aws-sdk/client-dynamodb": 3.1137.0
   # The worker's EventBridge client — PutEvents for KYC_PASSED_STUB.
   "@aws-sdk/client-eventbridge": 3.1137.0
+  # The acceptance specs' SQS client — drains the EventBridge sink queue to assert emitted events.
+  "@aws-sdk/client-sqs": 3.1137.0
   # ESLint's own recommended rule set, pulled in by shared's baseConfig for every package.
   "@eslint/js": 10.0.1
   # Type-only defs for shared's LEDGER_REQUEST_SCHEMA (the API GW request validator's JSON Schema).
   "@types/json-schema": 7.0.15
   # Node type defs — held at the Node 24 major to match the pinned runtime, not the latest major.
   "@types/node": 24.13.6
+  # `cdklocal` — the CDK CLI pointed at LocalStack, for deploying the stack the acceptance specs run against.
+  aws-cdk-local: 3.0.4
   # The CDK CLI (`cdk synth`) — its own version line, independent of aws-cdk-lib's.
   aws-cdk: 2.1142.0
   # The CDK L2 construct library infra's stacks and constructs are built on.

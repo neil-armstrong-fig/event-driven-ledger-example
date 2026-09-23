@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`synthesizes the ledger stack with no unnoticed resource or property changes 1`] = `
+exports[`the acceptance-test stack > synthesizes with no unnoticed resource or property changes 1`] = `
 {
   "Outputs": {
     "ApiRestApiEndpoint4DEFB5CC": {
@@ -27,6 +27,637 @@ exports[`synthesizes the ledger stack with no unnoticed resource or property cha
             "/",
           ],
         ],
+      },
+    },
+    "LedgerApiUrl": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "ApiRestApiE35FEAFE",
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region",
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix",
+            },
+            "/",
+            {
+              "Ref": "ApiRestApiDeploymentStageprodE828476C",
+            },
+            "/",
+          ],
+        ],
+      },
+    },
+    "LedgerSinkQueueUrl": {
+      "Value": {
+        "Ref": "EventSinkQueue06ACFD02",
+      },
+    },
+    "LedgerTableName": {
+      "Value": {
+        "Ref": "IdempotencyTableE9369C9C",
+      },
+    },
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "ApiIntegrationRole44C91040": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "apigateway.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiIntegrationRoleDefaultPolicy5AEAACEB": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "RequestQueueE69D5844",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiIntegrationRoleDefaultPolicy5AEAACEB",
+        "Roles": [
+          {
+            "Ref": "ApiIntegrationRole44C91040",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiRestApiDeploymentDC05A82D417d496af0580f300c3d61d46143c1e0": {
+      "DependsOn": [
+        "ApiRestApifractionalizationrequestsPOST9DEF08C4",
+        "ApiRestApifractionalizationrequests0B695B3C",
+        "ApiRestApiFractionalizationRequestModelFC2BCCBA",
+        "ApiRestApiRequestValidator8FC0F2B0",
+      ],
+      "Metadata": {
+        "aws:cdk:do-not-refactor": true,
+      },
+      "Properties": {
+        "Description": "Automatically created by the RestApi construct",
+        "RestApiId": {
+          "Ref": "ApiRestApiE35FEAFE",
+        },
+      },
+      "Type": "AWS::ApiGateway::Deployment",
+    },
+    "ApiRestApiDeploymentStageprodE828476C": {
+      "Properties": {
+        "DeploymentId": {
+          "Ref": "ApiRestApiDeploymentDC05A82D417d496af0580f300c3d61d46143c1e0",
+        },
+        "RestApiId": {
+          "Ref": "ApiRestApiE35FEAFE",
+        },
+        "StageName": "prod",
+      },
+      "Type": "AWS::ApiGateway::Stage",
+    },
+    "ApiRestApiE35FEAFE": {
+      "Properties": {
+        "Name": "RestApi",
+      },
+      "Type": "AWS::ApiGateway::RestApi",
+    },
+    "ApiRestApiFractionalizationRequestModelFC2BCCBA": {
+      "Properties": {
+        "ContentType": "application/json",
+        "RestApiId": {
+          "Ref": "ApiRestApiE35FEAFE",
+        },
+        "Schema": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "properties": {
+            "assetId": {
+              "minLength": 1,
+              "type": "string",
+            },
+            "requestId": {
+              "minLength": 1,
+              "type": "string",
+            },
+          },
+          "required": [
+            "assetId",
+            "requestId",
+          ],
+          "type": "object",
+        },
+      },
+      "Type": "AWS::ApiGateway::Model",
+    },
+    "ApiRestApiRequestValidator8FC0F2B0": {
+      "Properties": {
+        "RestApiId": {
+          "Ref": "ApiRestApiE35FEAFE",
+        },
+        "ValidateRequestBody": true,
+        "ValidateRequestParameters": true,
+      },
+      "Type": "AWS::ApiGateway::RequestValidator",
+    },
+    "ApiRestApifractionalizationrequests0B695B3C": {
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiRestApiE35FEAFE",
+            "RootResourceId",
+          ],
+        },
+        "PathPart": "fractionalization-requests",
+        "RestApiId": {
+          "Ref": "ApiRestApiE35FEAFE",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+    },
+    "ApiRestApifractionalizationrequestsPOST9DEF08C4": {
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "Credentials": {
+            "Fn::GetAtt": [
+              "ApiIntegrationRole44C91040",
+              "Arn",
+            ],
+          },
+          "IntegrationHttpMethod": "POST",
+          "IntegrationResponses": [
+            {
+              "ResponseTemplates": {
+                "application/json": "{"message":"Accepted"}",
+              },
+              "SelectionPattern": "2\\d{2}",
+              "StatusCode": "202",
+            },
+            {
+              "ResponseTemplates": {
+                "application/json": "{"message":"Failed to enqueue the request"}",
+              },
+              "StatusCode": "500",
+            },
+          ],
+          "PassthroughBehavior": "NEVER",
+          "RequestParameters": {
+            "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'",
+          },
+          "RequestTemplates": {
+            "application/json": "#set($assetId = $input.path('$.assetId'))
+#set($idempotencyKey = $input.params('Idempotency-Key'))
+#set($action = "Action=SendMessage")
+#set($messageGroupId = "&MessageGroupId=$util.urlEncode($assetId)")
+#set($messageBody = "&MessageBody=$util.urlEncode($input.body)")
+#set($attributeName = "&MessageAttribute.1.Name=IdempotencyKey")
+#set($attributeType = "&MessageAttribute.1.Value.DataType=String")
+#set($attributeValue = "&MessageAttribute.1.Value.StringValue=$util.urlEncode($idempotencyKey)")
+#set($body = "$action$messageGroupId$messageBody$attributeName$attributeType$attributeValue")
+$body",
+          },
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":sqs:path/",
+                {
+                  "Ref": "AWS::AccountId",
+                },
+                "/",
+                {
+                  "Fn::GetAtt": [
+                    "RequestQueueE69D5844",
+                    "QueueName",
+                  ],
+                },
+              ],
+            ],
+          },
+        },
+        "MethodResponses": [
+          {
+            "StatusCode": "202",
+          },
+          {
+            "StatusCode": "500",
+          },
+        ],
+        "RequestModels": {
+          "application/json": {
+            "Ref": "ApiRestApiFractionalizationRequestModelFC2BCCBA",
+          },
+        },
+        "RequestParameters": {
+          "method.request.header.Idempotency-Key": true,
+        },
+        "RequestValidatorId": {
+          "Ref": "ApiRestApiRequestValidator8FC0F2B0",
+        },
+        "ResourceId": {
+          "Ref": "ApiRestApifractionalizationrequests0B695B3C",
+        },
+        "RestApiId": {
+          "Ref": "ApiRestApiE35FEAFE",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "EventBusEEC924FB": {
+      "Properties": {
+        "Name": "LedgerStackEventBusECCC4319",
+      },
+      "Type": "AWS::Events::EventBus",
+    },
+    "EventSinkKycPassedRule4879D05B": {
+      "Properties": {
+        "EventBusName": {
+          "Ref": "EventBusEEC924FB",
+        },
+        "EventPattern": {
+          "detail-type": [
+            "KYC_PASSED_STUB",
+          ],
+        },
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "EventSinkQueue06ACFD02",
+                "Arn",
+              ],
+            },
+            "Id": "Target0",
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
+    },
+    "EventSinkQueue06ACFD02": {
+      "DeletionPolicy": "Delete",
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "EventSinkQueuePolicy46A86BDF": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl",
+              ],
+              "Condition": {
+                "ArnEquals": {
+                  "aws:SourceArn": {
+                    "Fn::GetAtt": [
+                      "EventSinkKycPassedRule4879D05B",
+                      "Arn",
+                    ],
+                  },
+                },
+              },
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EventSinkQueue06ACFD02",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Queues": [
+          {
+            "Ref": "EventSinkQueue06ACFD02",
+          },
+        ],
+      },
+      "Type": "AWS::SQS::QueuePolicy",
+    },
+    "IdempotencyTableE9369C9C": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "idempotencyKey",
+            "AttributeType": "S",
+          },
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "idempotencyKey",
+            "KeyType": "HASH",
+          },
+        ],
+      },
+      "Type": "AWS::DynamoDB::Table",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "RequestQueueDeadLetterQueue8059E85F": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "FifoQueue": true,
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "RequestQueueE69D5844": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "ContentBasedDeduplication": true,
+        "FifoQueue": true,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {
+            "Fn::GetAtt": [
+              "RequestQueueDeadLetterQueue8059E85F",
+              "Arn",
+            ],
+          },
+          "maxReceiveCount": 3,
+        },
+      },
+      "Type": "AWS::SQS::Queue",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "WorkerFunctionAF8A26AF": {
+      "DependsOn": [
+        "WorkerFunctionServiceRoleDefaultPolicy13780C49",
+        "WorkerFunctionServiceRole650C7B87",
+      ],
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Fn::Sub": "cdk-hnb659fds-assets-\${AWS::AccountId}-\${AWS::Region}",
+          },
+          "S3Key": "<asset-hash>.zip",
+        },
+        "Environment": {
+          "Variables": {
+            "LEDGER_EVENT_BUS_NAME": {
+              "Ref": "EventBusEEC924FB",
+            },
+            "LEDGER_TABLE_NAME": {
+              "Ref": "IdempotencyTableE9369C9C",
+            },
+          },
+        },
+        "Handler": "index.handleLedgerBatch",
+        "Role": {
+          "Fn::GetAtt": [
+            "WorkerFunctionServiceRole650C7B87",
+            "Arn",
+          ],
+        },
+        "Runtime": "nodejs22.x",
+        "Timeout": 30,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "WorkerFunctionServiceRole650C7B87": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "WorkerFunctionServiceRoleDefaultPolicy13780C49": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "dynamodb:PutItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "IdempotencyTableE9369C9C",
+                    "Arn",
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "events:PutEvents",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EventBusEEC924FB",
+                  "Arn",
+                ],
+              },
+            },
+            {
+              "Action": [
+                "sqs:ReceiveMessage",
+                "sqs:ChangeMessageVisibility",
+                "sqs:GetQueueUrl",
+                "sqs:DeleteMessage",
+                "sqs:GetQueueAttributes",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "RequestQueueE69D5844",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "WorkerFunctionServiceRoleDefaultPolicy13780C49",
+        "Roles": [
+          {
+            "Ref": "WorkerFunctionServiceRole650C7B87",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "WorkerFunctionSqsEventSourceLedgerStackRequestQueueA93002BD1B6FA4E2": {
+      "Properties": {
+        "BatchSize": 5,
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "RequestQueueE69D5844",
+            "Arn",
+          ],
+        },
+        "FunctionName": {
+          "Ref": "WorkerFunctionAF8A26AF",
+        },
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures",
+        ],
+      },
+      "Type": "AWS::Lambda::EventSourceMapping",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;
+
+exports[`the production stack > synthesizes with no unnoticed resource or property changes 1`] = `
+{
+  "Outputs": {
+    "ApiRestApiEndpoint4DEFB5CC": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "ApiRestApiE35FEAFE",
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region",
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix",
+            },
+            "/",
+            {
+              "Ref": "ApiRestApiDeploymentStageprodE828476C",
+            },
+            "/",
+          ],
+        ],
+      },
+    },
+    "LedgerApiUrl": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "ApiRestApiE35FEAFE",
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region",
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix",
+            },
+            "/",
+            {
+              "Ref": "ApiRestApiDeploymentStageprodE828476C",
+            },
+            "/",
+          ],
+        ],
+      },
+    },
+    "LedgerTableName": {
+      "Value": {
+        "Ref": "IdempotencyTableE9369C9C",
       },
     },
   },

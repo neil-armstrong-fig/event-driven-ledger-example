@@ -3,7 +3,7 @@
 The CDK app: stacks and constructs that deploy the worker's _built artifact_ — never imports its
 source — see the root `AGENTS.md` package table. `src/` holds `LedgerStack.ts` (the real deployable
 stack) plus one subject-named subfolder per resource (`queue/`, etc.), each with its test file
-colocated right beside it — same convention as every other package, no separate `test/` folder. `bin/App.ts` is the CDK CLI entry (`cdk.json` runs it via `tsx`); `pnpm synth` runs a real `cdk synth`, outside `checks`.
+colocated right beside it — same convention as every other package, no separate `test/` folder. `bin/App.ts` is the CDK CLI entry (`cdk.json` runs it via `tsx`); `pnpm synth` runs a real `cdk synth`, outside `checks`. `pnpm deploy:local` is `cdklocal destroy --force` then a fresh `cdklocal deploy` with `-c includeEventSink=true` — the destroy-first loop below, as one command (needs LocalStack up and bootstrapped).
 Built one resource at a time, 7 stops, each with the `LedgerStack` snapshot updated alongside the
 construct code — see `docs/PLAN.md` Phase 4 for the exact resource order: (1) FIFO queue + FIFO DLQ,
 (2) DynamoDB table, (3) EventBridge custom bus, (4) API GW + validator + direct SQS integration, (5)
@@ -18,13 +18,15 @@ beside it. Imports use the `@src/*` alias, never `./` or `../`.
 ```
 src/
 ├── LedgerStack.ts                    the deployable stack — mounts every construct below
-├── LedgerStack.test.ts               whole-stack snapshot (asset hashes normalized)
+├── LedgerStack.test.ts               two whole-stack snapshots — production and acceptance-test (`includeEventSink`) — asset hashes normalized, plus the sink gate and the outputs contract
 ├── __snapshots__/
 ├── queue/LedgerRequestQueue.ts       FIFO queue + FIFO DLQ
 ├── idempotency/                      DynamoDB idempotency table
 │   ├── LedgerIdempotencyTable.ts
 │   └── LedgerIdempotencyTable.test.ts   DESTROY removal policy (own named assertion)
-├── events/LedgerEventBus.ts          custom EventBridge bus
+├── events/                           EventBridge
+│   ├── LedgerEventBus.ts             custom bus
+│   └── LedgerEventSink.ts            rule → SQS queue for acceptance tests; only with `-c includeEventSink=true`
 ├── api/                              API Gateway → SQS
 │   ├── LedgerApi.ts
 │   ├── LedgerApi.test.ts             Idempotency-Key header is required

@@ -18,7 +18,7 @@ Also never: create/switch/delete branches, force-push, `git reset --hard`, or an
 | `domain` | Pure business logic: idempotency-key semantics, `KYC_PASSED_STUB` event payload construction. Zero AWS imports. | `shared` only |
 | `worker` | The SQS-batch Lambda handler. Wires `domain` logic to real AWS SDK calls. | `domain`, `shared` |
 | `infra` | CDK app, stacks, constructs. Deploys the worker's *built artifact* — never imports its source. CDK-output regression tests live here. | `shared` only |
-| `acceptance-tests` | ATDD DSL + given/when/then specs, run against a deployed LocalStack stack. | `shared`, plus its own `aws/*Client.ts` wrappers |
+| `acceptance-tests` | ATDD DSL + given/when/then specs, run against a deployed LocalStack stack. | `shared`, plus the AWS SDK inside its own `aws/` folders only |
 
 Import boundaries are enforced by ESLint `no-restricted-imports`, deny-by-default (a new workspace package is denied until explicitly added to `allowedPackages`). This is not a convention to remember and follow by hand — it's a lint failure if violated, so trust `pnpm checks` over memory.
 

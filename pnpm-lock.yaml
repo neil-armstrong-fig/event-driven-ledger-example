@@ -107,10 +107,16 @@ settings:
 
 catalogs:
   default:
+    '@aws-sdk/client-cloudformation':
+      specifier: 3.1137.0
+      version: 3.1137.0
     '@aws-sdk/client-dynamodb':
       specifier: 3.1137.0
       version: 3.1137.0
     '@aws-sdk/client-eventbridge':
+      specifier: 3.1137.0
+      version: 3.1137.0
+    '@aws-sdk/client-sqs':
       specifier: 3.1137.0
       version: 3.1137.0
     '@eslint/js':
@@ -128,6 +134,9 @@ catalogs:
     aws-cdk-lib:
       specifier: 2.270.0
       version: 2.270.0
+    aws-cdk-local:
+      specifier: 3.0.4
+      version: 3.0.4
     constructs:
       specifier: 10.8.1
       version: 10.8.1
@@ -165,6 +174,15 @@ importers:
 
   acceptance-tests:
     dependencies:
+      '@aws-sdk/client-cloudformation':
+        specifier: 'catalog:'
+        version: 3.1137.0
+      '@aws-sdk/client-dynamodb':
+        specifier: 'catalog:'
+        version: 3.1137.0
+      '@aws-sdk/client-sqs':
+        specifier: 'catalog:'
+        version: 3.1137.0
       '@ledger/shared':
         specifier: workspace:*
         version: link:../shared
@@ -252,6 +270,9 @@ importers:
       aws-cdk:
         specifier: 'catalog:'
         version: 2.1142.0
+      aws-cdk-local:
+        specifier: 'catalog:'
+        version: 3.0.4
       esbuild:
         specifier: 'catalog:'
         version: 0.28.2
@@ -371,12 +392,20 @@ packages:
       - jsonschema
       - semver
 
+  '@aws-sdk/client-cloudformation@3.1137.0':
+    resolution: {integrity: sha512-/Rsu2eUrB0A1mhX0BIlia1pkmSRgKbtmDdS1s6kTn0Xqm24E9RKMEhYQTj0DcQHmSty1nwD8H1J3c4xVDvISrQ==}
+    engines: {node: '>=20.0.0'}
+
   '@aws-sdk/client-dynamodb@3.1137.0':
     resolution: {integrity: sha512-KBSA5fw7cJaEiTOQem4NF0StMf8tSIt40uMqmTtW39JOTKvXG851FSXLLNnsN+xupnrFt6LMUKErOtUY3Ip2FA==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/client-eventbridge@3.1137.0':
     resolution: {integrity: sha512-zzPhypig6aKRw7dF+Yr6QjszBEtox5xiIFboY/qSLnj3sHbnfydvWdmqlZfn3vz8HrDQiAweVQN4jlpO6Ky0MA==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/client-sqs@3.1137.0':
+    resolution: {integrity: sha512-OVO4H407SrlaP03WqMsoR1T0NmaX33kA3U6uBaB6AZjjVurzy4RNLau7enrLCaBW2nLV8UYbepHIJ4SetvoVfA==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/core@3.978.0':
@@ -425,6 +454,10 @@ packages:
 
   '@aws-sdk/middleware-endpoint-discovery@3.972.30':
     resolution: {integrity: sha512-0hmD7/NG2NoVOVHvUb6rtY5POQYr+/9gdHvrYhIBA1zmCqKOBd5Gz3dL+iZ15FHOJbs/5kLplGoePc8PHTlzYA==}
+    engines: {node: '>=20.0.0'}
+
+  '@aws-sdk/middleware-sdk-sqs@3.972.42':
+    resolution: {integrity: sha512-D/O6iHAqlm0b430vIGewanSsr5RzaWbSDFlHYdKLWlZb4kaMKBmb44ReNHAFEKj5tNRY8pysw0qfciosB/VcJg==}
     engines: {node: '>=20.0.0'}
 
   '@aws-sdk/nested-clients@3.997.45':
@@ -944,6 +977,10 @@ packages:
       - yaml
       - mime-types
 
+  aws-cdk-local@3.0.4:
+    resolution: {integrity: sha512-u8c62rfZNGqB9oW+RSW8YAqLLFAcgc5y2aQrgqQTBUVKLTN6r54g/IUbTq/dM1fqvT1GqtylzQjQ8ytACMSGTQ==}
+    hasBin: true
+
   aws-cdk@2.1142.0:
     resolution: {integrity: sha512-gNOeii+avTJmOwfR8tVgraZ5A2EBC/529EXg7e+yBp8Zl608dAv5CtFRoJt8QoKiruiCwYr4HF6ClNAse/NkSg==}
     engines: {node: '>= 18.0.0'}
@@ -989,6 +1026,10 @@ packages:
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
+
+  diff@5.2.2:
+    resolution: {integrity: sha512-vtcDfH3TOjP8UekytvnHH1o1P4FcUdt4eQ1Y+Abap1tk/OB2MWQvcwS2ClCd1zuIhc3JKOx6p3kod8Vfys3E+A==}
+    engines: {node: '>=0.3.1'}
 
   es-module-lexer@2.3.2:
     resolution: {integrity: sha512-poHGpORABojJJucnV9KbOavETW8lBVnphkW77ER5/BQ5Fz7oXSoCNek7IH3vR5nRjdsEz926ibFYX8KtLQmdyw==}
@@ -1490,6 +1531,17 @@ snapshots:
 
   '@aws-cdk/cloud-assembly-schema@54.24.0': {}
 
+  '@aws-sdk/client-cloudformation@3.1137.0':
+    dependencies:
+      '@aws-sdk/core': 3.978.0
+      '@aws-sdk/credential-provider-node': 3.972.83
+      '@aws-sdk/types': 3.974.5
+      '@smithy/core': 3.35.0
+      '@smithy/fetch-http-handler': 5.8.0
+      '@smithy/node-http-handler': 4.12.1
+      '@smithy/types': 4.19.0
+      tslib: 2.8.1
+
   '@aws-sdk/client-dynamodb@3.1137.0':
     dependencies:
       '@aws-sdk/core': 3.978.0
@@ -1508,6 +1560,18 @@ snapshots:
       '@aws-sdk/core': 3.978.0
       '@aws-sdk/credential-provider-node': 3.972.83
       '@aws-sdk/signature-v4-multi-region': 3.996.46
+      '@aws-sdk/types': 3.974.5
+      '@smithy/core': 3.35.0
+      '@smithy/fetch-http-handler': 5.8.0
+      '@smithy/node-http-handler': 4.12.1
+      '@smithy/types': 4.19.0
+      tslib: 2.8.1
+
+  '@aws-sdk/client-sqs@3.1137.0':
+    dependencies:
+      '@aws-sdk/core': 3.978.0
+      '@aws-sdk/credential-provider-node': 3.972.83
+      '@aws-sdk/middleware-sdk-sqs': 3.972.42
       '@aws-sdk/types': 3.974.5
       '@smithy/core': 3.35.0
       '@smithy/fetch-http-handler': 5.8.0
@@ -1625,6 +1689,13 @@ snapshots:
   '@aws-sdk/middleware-endpoint-discovery@3.972.30':
     dependencies:
       '@aws-sdk/endpoint-cache': 3.972.11
+      '@aws-sdk/types': 3.974.5
+      '@smithy/core': 3.35.0
+      '@smithy/types': 4.19.0
+      tslib: 2.8.1
+
+  '@aws-sdk/middleware-sdk-sqs@3.972.42':
+    dependencies:
       '@aws-sdk/types': 3.974.5
       '@smithy/core': 3.35.0
       '@smithy/types': 4.19.0
@@ -2049,6 +2120,11 @@ snapshots:
       '@aws-cdk/cloud-assembly-schema': 54.24.0
       constructs: 10.8.1
 
+  aws-cdk-local@3.0.4:
+    dependencies:
+      diff: 5.2.2
+      semver: 7.8.5
+
   aws-cdk@2.1142.0: {}
 
   balanced-match@4.0.4: {}
@@ -2084,6 +2160,8 @@ snapshots:
   deep-is@0.1.4: {}
 
   detect-libc@2.1.2: {}
+
+  diff@5.2.2: {}
 
   es-module-lexer@2.3.2: {}
 

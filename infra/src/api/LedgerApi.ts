@@ -1,3 +1,4 @@
+import {FRACTIONALIZATION_REQUESTS_PATH} from "@ledger/shared/api/FractionalizationRequestsPath";
 import {Stack} from "aws-cdk-lib";
 import {AwsIntegration, PassthroughBehavior, RestApi, type JsonSchema} from "aws-cdk-lib/aws-apigateway";
 import {Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
@@ -62,7 +63,7 @@ export class LedgerApi extends Construct {
       },
     });
 
-    const requestsResource = this.restApi.root.addResource("fractionalization-requests");
+    const requestsResource = this.restApi.root.addResource(FRACTIONALIZATION_REQUESTS_PATH);
     requestsResource.addMethod("POST", integration, {
       requestValidator: validator,
       requestModels: {"application/json": model},

@@ -13,6 +13,11 @@ API GW request validator model (cast to CDK's own `JsonSchema` type at the `infr
 construct actually renders — confirmed against the synthesized snapshot, not assumed). Folder named
 for subject (`events/`), per convention.
 
+`src/stack/LedgerStackOutputs.ts` (`LEDGER_STACK_OUTPUTS`, the CloudFormation output names) and
+`src/api/FractionalizationRequestsPath.ts` are the contract between `infra` (which provides them) and
+`acceptance-tests` (which reads them). `infra`'s tests assert the acceptance-test stack provides every
+output and serves that path, so drift fails `pnpm checks` rather than an acceptance run.
+
 ## Import boundary
 
 `eslint.config.js` sets `allowedPackages: ["@ledger/shared"]` — i.e. this package may only import
