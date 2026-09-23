@@ -12,7 +12,7 @@ const assetId = "asset-1";
 
 // Fresh for every criterion, unlike a browser page the deployed stack is shared: it outlives a run, so
 // a reused key finds the old record, and a reused body is silently dropped by SQS FIFO content-based
-// deduplication for five minutes (docs/PLAN.md Gap #1) — no record, no event, and still a 202.
+// deduplication for five minutes (docs/decisions/0001-dedup-vs-idempotency.md) — no record, no event, and still a 202.
 let idempotencyKey: string;
 let status: number;
 

@@ -49,13 +49,13 @@ src/
 `*Client`, not a hardcoded delay — a fixed sleep is either too slow (every run) or too fast (flaky under
 load) and says nothing about why it failed.
 
-## The two scenarios to automate (Phase 6, steps 3–4)
+## The two scenarios
 
-1. **Happy path**: submit → 202 → wait → exactly one DynamoDB record → an event emitted.
+1. **Happy path**: submit → 202 → wait → the key is recorded → exactly one event emitted.
 2. **Double-spend**: two requests with the **same `Idempotency-Key`** but a **different `requestId`**
-   (so SQS content-based dedup lets both through) → exactly one DynamoDB record, and every emitted
-   event carries that same key — not "exactly one event" (Gap #2, Option A: at-least-once). Proven
-   manually in the Phase 1 spike (`docs/PLAN.md` Phase 1 results, item 7) — automate it as written.
+   (so SQS content-based dedup lets both through) → the key is recorded (the table key keeps it to one record), and every emitted
+   event carries that same key — not "exactly one event" (Gap #2, Option A: at-least-once). Explained in
+   `docs/decisions/0001-dedup-vs-idempotency.md` / `0002-dual-write.md`.
 
 ## EventBridge assertion needs its own sink
 
@@ -109,7 +109,7 @@ deploy:aws`; deploying to a real account is your call, agents ask first). CI alw
 
 Unlike a browser page, **the deployed stack is shared and outlives a run.** A reused idempotency key finds
 last run's record; a reused message body is dropped by SQS FIFO content-based deduplication for five
-minutes (`docs/PLAN.md` Gap #1) — the API still answers 202, no record and no event ever appear, and the
+minutes (`docs/decisions/0001-dedup-vs-idempotency.md`) — the API still answers 202, no record and no event ever appear, and the
 failure looks like a broken worker. Generate the key and `requestId` in the `given`'s `beforeEach` (each
 `then` re-runs it), not at module level. Give each `when` one thing to wait for, so a criterion fails for
 its own reason and not because a sibling's wait timed out.

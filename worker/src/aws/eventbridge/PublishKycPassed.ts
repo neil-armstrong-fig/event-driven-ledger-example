@@ -1,5 +1,5 @@
 import {PutEventsCommand, type EventBridgeClient} from "@aws-sdk/client-eventbridge";
-import type {KycPassedEventDetail} from "@ledger/domain/events/BuildKycPassedEvent";
+import type {KycPassedEventDetail} from "@ledger/domain/events/KycPassedEventDetail";
 
 const EVENT_SOURCE = "ledger.worker";
 const KYC_PASSED_DETAIL_TYPE = "KYC_PASSED_STUB";

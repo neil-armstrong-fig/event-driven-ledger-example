@@ -1,4 +1,4 @@
-// Proven VTL template (docs/PLAN.md Phase 1 results, item 3) — Idempotency-Key must travel as a native SQS message attribute, never spliced into the body, which fails with a VTL parse error.
+// Idempotency-Key travels as a native SQS message attribute, never spliced into the body: API Gateway's VTL engine cannot escape double quotes inside `$util.urlEncode("...")`, so body-splicing fails with a parse error. MessageBody stays an exact passthrough of the request body.
 // Every `#set` line (and only `#set` lines) may be blank-adjacent — Velocity swallows a directive-only line's newline but not a truly blank one, so the rendered body stays byte-identical to one line.
 export const LEDGER_API_REQUEST_TEMPLATE = `#set($assetId = $input.path('$.assetId'))
 #set($idempotencyKey = $input.params('Idempotency-Key'))

@@ -10,6 +10,7 @@ interface RecordRequestOptions {
 
 export async function recordRequest({client, tableName, idempotencyKey}: RecordRequestOptions): Promise<RecordOutcome> {
   try {
+    // The idempotency guard itself (docs/decisions/0001-dedup-vs-idempotency.md).
     await client.send(
       new PutItemCommand({
         TableName: tableName,

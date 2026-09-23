@@ -21,7 +21,7 @@ interface LedgerEventSinkProps {
  * only behind the `includeEventSink` context flag — see `LedgerStack`.
  *
  * The sort key is the event's own EventBridge id, so two events for one idempotency key (the
- * at-least-once duplicate, docs/PLAN.md Gap #2) are both kept.
+ * at-least-once duplicate, docs/decisions/0002-dual-write.md) are both kept.
  */
 export class LedgerEventSink extends Construct {
   public readonly table: Table;

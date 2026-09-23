@@ -1,4 +1,5 @@
-import {extractIdempotencyKey, type IncomingLedgerMessage} from "./ExtractIdempotencyKey";
+import {extractIdempotencyKey} from "./ExtractIdempotencyKey";
+import type {IncomingLedgerMessage} from "./IncomingLedgerMessage";
 
 it("extracts the idempotency key from the SQS message attribute", () => {
   const message: IncomingLedgerMessage = {

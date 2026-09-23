@@ -1,4 +1,5 @@
-import {LEDGER_STACK_OUTPUTS, type LedgerStackOutputKey} from "@ledger/shared/stack/LedgerStackOutputs";
+import type {LedgerStackOutputKey} from "@ledger/shared/stack/LedgerStackOutputKey";
+import {LEDGER_STACK_OUTPUTS} from "@ledger/shared/stack/LedgerStackOutputs";
 import {readStackOutputs} from "@src/dsl/ledger/aws/stack-outputs/ReadStackOutputs";
 import {requireStackOutput} from "@src/dsl/ledger/aws/stack-outputs/RequireStackOutput";
 import type {LedgerEndpoints} from "@src/dsl/ledger/types/LedgerEndpoints";

@@ -9,7 +9,7 @@ import {LEDGER_REQUEST_SCHEMA} from "@ledger/shared/events/LedgerRequestSchema";
 
 import {LEDGER_API_REQUEST_TEMPLATE} from "@src/api/request/LedgerApiRequestTemplate";
 
-export interface LedgerApiProps {
+interface LedgerApiProps {
   readonly queue: Queue;
 }
 

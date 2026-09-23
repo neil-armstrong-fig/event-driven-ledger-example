@@ -1,4 +1,4 @@
-import type {KycPassedEventDetail} from "@ledger/domain/events/BuildKycPassedEvent";
+import type {KycPassedEventDetail} from "@ledger/domain/events/KycPassedEventDetail";
 
 import type {RecordOutcome} from "@src/batch/types/RecordOutcome";
 

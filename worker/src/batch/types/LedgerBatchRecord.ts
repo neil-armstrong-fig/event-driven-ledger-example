@@ -1,4 +1,4 @@
-import type {IncomingLedgerMessage} from "@ledger/domain/idempotency/ExtractIdempotencyKey";
+import type {IncomingLedgerMessage} from "@ledger/domain/idempotency/IncomingLedgerMessage";
 
 export interface LedgerBatchRecord extends IncomingLedgerMessage {
   messageId: string;

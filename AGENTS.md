@@ -1,6 +1,6 @@
 # event-driven-ledger — AI instructions
 
-This file governs how any AI agent (Claude, Codex, or otherwise) works in this repo. Read it in full before touching code. If you're resuming cold, also read `docs/PLAN.md` (full project context and decisions) and `TODO.md` (exact current status and next action) — this file is about *how* to work, those are about *what* to build and *why*.
+This file governs how any AI agent (Claude, Codex, or otherwise) works in this repo. Read it in full before touching code. If you're resuming cold, also read `README.md` (what this is and how it fits together) and `docs/architecture.md` (the diagram, a paragraph per box, and how it is tested) — this file is about *how* to work, those are about *what* and *why*.
 
 ## Git — hard rule
 
@@ -10,7 +10,7 @@ The developer stages files while reviewing them, so `git status` will show files
 
 Also never: create/switch/delete branches, force-push, `git reset --hard`, or any other history-rewriting or remote-affecting operation, without being asked in that specific instance.
 
-## Package table (target structure — see `docs/PLAN.md` for build status)
+## Package table
 
 | Package | Purpose | May import |
 |---|---|---|
@@ -22,13 +22,13 @@ Also never: create/switch/delete branches, force-push, `git reset --hard`, or an
 
 Import boundaries are enforced by ESLint `no-restricted-imports`, deny-by-default (a new workspace package is denied until explicitly added to `allowedPackages`). This is not a convention to remember and follow by hand — it's a lint failure if violated, so trust `pnpm checks` over memory.
 
-`docs/` holds only research or decisions that would otherwise need to be re-derived — see `docs/PLAN.md` for the project's full context and `docs/decisions/` (once written, Phase 8) for the two named architectural gaps (dedup-vs-idempotency, dual-write). Link code back to the doc section it implements(e.g. a comment naming the `docs/` section a rule comes from).
+`docs/` holds only research or decisions that would otherwise need to be re-derived — see `docs/architecture.md` for the project's full context and `docs/decisions/` for the two named architectural gaps (dedup-vs-idempotency, dual-write). Link code back to the doc section it implements(e.g. a comment naming the `docs/` section a rule comes from).
 
 ## Before changing code
 
 1. Read every `AGENTS.md` on the path to the file you're touching — root, then package, then any nested one.
-2. Read `docs/PLAN.md` and `TODO.md` to confirm what phase/step you're actually on. This project is being built in explicit, numbered, stop-after-each-step phases at the developer's request — do not skip ahead or batch multiple steps into one turn of work, regardless of which tool is driving.
-3. Inspect the nearest existing implementation or test for local convention. If there isn't one yet (early phases), say so explicitly rather than inventing a convention silently.
+2. Read `docs/architecture.md` and the relevant `docs/decisions/` ADR to confirm what the system is meant to do and why. Work one step at a time and show the result before moving on — do not batch unrelated changes into one turn of work, regardless of which tool is driving.
+3. Inspect the nearest existing implementation or test for local convention. If there isn't one yet, say so explicitly rather than inventing a convention silently.
 4. State which instruction files and reference implementations you used before editing.
 5. Before calling anything finished, re-read the relevant `AGENTS.md` and do a standards-only pass over your own diff — catch what lint/tests can't.
 
@@ -37,7 +37,7 @@ Import boundaries are enforced by ESLint `no-restricted-imports`, deny-by-defaul
 - **Acceptance-test-first**: for any user-observable behavior, write the given/when/then spec before the implementation, watch it fail for the *right* reason (not a typo, not a missing import — the actual behavior under test), then make it pass.
 - **Unit-test-first** for pure logic in `domain`: red, then green, then move on. Don't write the implementation first and backfill tests.
 - **A passing test proves nothing until you've watched it fail.** For any test you didn't just write red-then-green yourself (inherited, retrofitted, or written by another agent), deliberately break the code it covers, run it, confirm it fails for the right reason, then restore. This is a required verification step, not an optional audit.
-- **CDK output is tested too**, not just application code — see Testing pyramid in `docs/PLAN.md`. A CDK snapshot test with an unnormalized Lambda asset hash trains people to blindly run `-u`; normalize asset hashes/`S3Key`s out of the serializer so snapshot diffs stay meaningful.
+- **CDK output is tested too**, not just application code — see "How it is tested" in `docs/architecture.md`. A CDK snapshot test with an unnormalized Lambda asset hash trains people to blindly run `-u`; normalize asset hashes/`S3Key`s out of the serializer so snapshot diffs stay meaningful.
 
 ## Unit test convention
 
@@ -73,13 +73,13 @@ Reach for nested `describe`s when the subject has states that build on each othe
 - Deleting or rebuilding a lockfile.
 - Any destructive git operation (see the hard rule above — but also branch creation, stash, checkout of someone else's uncommitted work).
 - Deploying to a real (non-LocalStack) AWS account.
-- Anything not covered by an explicit phase/step already agreed in `docs/PLAN.md` — when in doubt about scope, stop and ask rather than extending the current step.
+- Anything beyond what was asked — when in doubt about scope, stop and ask rather than extending the current step.
 
 ## Local dev-loop gotcha — read this before touching `infra`
 
 **Any redeploy onto an already-running LocalStack stack that includes API Gateway breaks the Stage**, even for a change as small as editing the Lambda handler's code, with no error — `cdklocal deploy` reports success, CloudFormation shows `UPDATE_COMPLETE`, but every request 404s afterward. The only reliable fix is a full `cdklocal destroy --force` followed by a fresh `cdklocal deploy`. Treat this as the standard local iteration loop for `infra` — never assume an incremental update is safe to test against. CI is unaffected since it always starts from a fresh LocalStack container.
 
-## Other confirmed gotchas (proven during the Phase 1 spike — see `docs/PLAN.md` for full detail)
+## Other confirmed gotchas (proven against LocalStack during the initial spike)
 
 - `typescript` is pinned to exactly `6.0.3` in every package — TS7's new native compiler breaks `ts-node`'s programmatic API.
 - `Idempotency-Key` travels as a native **SQS message attribute**, never spliced into the JSON message body via VTL string concatenation — that approach was tried and fails with a VTL parse error.

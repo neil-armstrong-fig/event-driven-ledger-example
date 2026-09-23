@@ -14,6 +14,8 @@ export class LedgerRequestQueue extends Construct {
 
     this.queue = new Queue(this, "Queue", {
       fifo: true,
+      // A cheap filter for byte-identical retries only — the idempotency guard is the DynamoDB conditional write
+      // (docs/decisions/0001-dedup-vs-idempotency.md).
       contentBasedDeduplication: true,
       deadLetterQueue: {queue: this.deadLetterQueue, maxReceiveCount: MAX_RECEIVE_COUNT},
     });

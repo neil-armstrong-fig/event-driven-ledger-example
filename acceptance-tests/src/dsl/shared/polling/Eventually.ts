@@ -1,4 +1,4 @@
-export interface EventuallyOptions {
+interface EventuallyOptions {
   timeoutMs: number;
   intervalMs: number;
 }

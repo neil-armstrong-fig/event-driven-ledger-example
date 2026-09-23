@@ -12,7 +12,7 @@ const assetId = "asset-1";
 
 // Same key, fresh `requestId`: a byte-identical body would be dropped by SQS FIFO content-based
 // deduplication before the worker ever sees it, so it would prove nothing about the DynamoDB guard
-// (docs/PLAN.md Gap #1). Fresh for every criterion, as in the happy-path spec.
+// (docs/decisions/0001-dedup-vs-idempotency.md). Fresh for every criterion, as in the happy-path spec.
 let idempotencyKey: string;
 let statuses: number[];
 
@@ -43,7 +43,7 @@ given("a client submits two requests that share an idempotency key", () => {
 
   when("the worker has announced them", () => {
     beforeEach(async ({ledger}) => {
-      // Two, not one: the duplicate emits too (docs/PLAN.md Gap #2, Option A — at-least-once).
+      // Two, not one: the duplicate emits too (docs/decisions/0002-dual-write.md — at-least-once).
       await ledger.events.waitForKycPassedEvents(idempotencyKey, {atLeast: 2});
     });
 

@@ -5,7 +5,7 @@ the base tool configuration every other package extends (`eslint.base.js`, `pret
 `tsconfig.base.json`, `vitest.base.ts`), and `src/` holds the event schemas, DTOs, and JSON Schema for
 the API Gateway request validator model — the wire contract between `domain`/`worker` and `infra`.
 
-First real content landed at Phase 4 step 4: `src/events/LedgerRequestSchema.ts` —
+Its schema lives in `src/events/LedgerRequestSchema.ts` —
 `LEDGER_REQUEST_SCHEMA`, the plain JSON Schema object `infra`'s `LedgerApi` construct passes to the
 API GW request validator model (cast to CDK's own `JsonSchema` type at the `infra` call site, not here
 — `shared` stays framework-agnostic and does not import `aws-cdk-lib`). Typed as `JSONSchema4` from

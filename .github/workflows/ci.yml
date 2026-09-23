@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   # Lint, format, type-check and unit + CDK snapshot tests across every package.
-  # Needs no AWS or LocalStack (see docs/PLAN.md, Phase 7).
+  # Needs no AWS or LocalStack.
   gate:
     runs-on: ubuntu-latest
     steps:
@@ -25,7 +25,7 @@ jobs:
       - run: pnpm checks
 
   # Deploys the stack to a fresh LocalStack container and runs the acceptance specs against it.
-  # LocalStack's free Hobby tier is non-commercial with no official CI support (docs/PLAN.md, Phase 7):
+  # LocalStack's free Hobby tier is non-commercial with no official CI support (see README.md):
   # this job can fail for licensing or service reasons that have nothing to do with the code.
   acceptance:
     needs: gate

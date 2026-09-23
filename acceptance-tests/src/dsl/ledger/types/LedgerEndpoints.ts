@@ -1,4 +1,4 @@
-import type {LedgerStackOutputKey} from "@ledger/shared/stack/LedgerStackOutputs";
+import type {LedgerStackOutputKey} from "@ledger/shared/stack/LedgerStackOutputKey";
 
 /**
  * Where a deployed ledger stack's pieces live — resolved once per file from its stack outputs. One

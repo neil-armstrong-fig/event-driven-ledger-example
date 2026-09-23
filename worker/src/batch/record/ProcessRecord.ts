@@ -14,7 +14,7 @@ export async function processRecord(
     const {assetId} = JSON.parse(record.body) as LedgerRequestBody;
 
     // The event is emitted whether the key was newly recorded or already there: if a previous attempt
-    // recorded it but failed to publish, the redelivery is the only chance to emit (docs/PLAN.md Gap #2).
+    // recorded it but failed to publish, the redelivery is the only chance to emit (docs/decisions/0002-dual-write.md).
     await dependencies.recordRequest(idempotencyKey);
     await dependencies.publishKycPassed(buildKycPassedEvent({assetId, idempotencyKey}));
     return true;

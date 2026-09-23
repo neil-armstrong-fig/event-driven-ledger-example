@@ -52,7 +52,7 @@ catalog:
   prettier: 3.9.6
   # Runs the CDK app entry (bin/App.ts) for the CLI — esbuild-based, so unaffected by TS7 breaking ts-node.
   tsx: 4.23.15
-  # The compiler — pinned below latest since TS7's native compiler breaks ts-node's API (Phase 1 spike).
+  # The compiler — pinned below latest since TS7's native compiler breaks ts-node's API (found during the initial LocalStack spike).
   typescript: 6.0.3
   # TypeScript-aware ESLint parser and rules, pulled in by shared's baseConfig for every package.
   typescript-eslint: 8.70.1
