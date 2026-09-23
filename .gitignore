@@ -1,0 +1,25 @@
+# Personal / sensitive — never commit
+Neil Armstrong - Software Architect CV.html
+*:Zone.Identifier
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+cdk.out/
+*.tsbuildinfo
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Env
+.env
+.env.local
+
+# Editor / OS
+.DS_Store
+
+# Logs
+*.log
