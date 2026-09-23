@@ -23,3 +23,41 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm checks
+
+  # Deploys the stack to a fresh LocalStack container and runs the acceptance specs against it.
+  # LocalStack's free Hobby tier is non-commercial with no official CI support (docs/PLAN.md, Phase 7):
+  # this job can fail for licensing or service reasons that have nothing to do with the code.
+  acceptance:
+    needs: gate
+    # Fork PRs get no secrets, so LocalStack could not start.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      LOCALSTACK_AUTH_TOKEN: ${{ secrets.LOCALSTACK_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The Docker socket is mounted because LocalStack runs the worker Lambda in a container.
+      - name: Start LocalStack
+        run: |
+          docker run -d --name ledger-localstack -p 127.0.0.1:4566:4566 -e LOCALSTACK_AUTH_TOKEN \
+            -v /var/run/docker.sock:/var/run/docker.sock localstack/localstack:latest
+          timeout 120 bash -c 'until curl -sf http://localhost:4566/_localstack/health >/dev/null; do sleep 2; done'
+      # Dummy credentials and region: LocalStack accepts any, cdklocal needs some.
+      - name: Deploy to LocalStack
+        env:
+          AWS_ACCESS_KEY_ID: test
+          AWS_SECRET_ACCESS_KEY: test
+          AWS_DEFAULT_REGION: us-east-1
+        run: |
+          pnpm --dir infra exec cdklocal bootstrap
+          pnpm --dir infra deploy:local
+      - run: pnpm --dir acceptance-tests acceptance-tests
+      - name: LocalStack logs
+        if: failure()
+        run: docker logs ledger-localstack

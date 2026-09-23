@@ -71,7 +71,7 @@ event-driven-ledger/
 │   ├── PLAN.md                    # this file
 │   ├── architecture.md            # Mermaid diagram + narrative — NOT YET WRITTEN (Phase 8)
 │   └── decisions/                 # short ADRs for the two named gaps above, linked from code — NOT YET WRITTEN
-└── .github/workflows/             # ci.yml — gate job written; acceptance job against LocalStack service container NOT YET WRITTEN (Phase 7 step 2)
+└── .github/workflows/             # ci.yml — gate job written; gate + acceptance (LocalStack) jobs
 ```
 
 Import boundaries (ESLint `no-restricted-imports`, deny-by-default): `shared` → nothing; `domain` → `shared` only, **no `@aws-sdk/*`, no `aws-cdk-lib`**; `worker` → `domain` + `shared`; `infra` → `shared` only (never imports `domain`/`worker` source — it *deploys* the worker's built artifact); `acceptance-tests` → `shared` only; the AWS SDK and `fetch` are allowed only inside `aws/` folders, never in a `*Dsl` or a spec.

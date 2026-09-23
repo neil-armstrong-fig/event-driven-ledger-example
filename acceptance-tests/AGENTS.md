@@ -101,7 +101,9 @@ artifact, not your working tree.
 The stack is named by `LEDGER_STACK_NAME` (default `LedgerStack`). The SDK clients read the endpoint and
 credentials from `AWS_ENDPOINT_URL`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`;
 `vitest.acceptance.config.ts` defaults them to LocalStack and dummy credentials, so nothing needs
-exporting. The API URL LocalStack outputs (`…execute-api.localhost.localstack.cloud:4566`) is used as is.
+exporting. To run the same specs against a real deployment, set `ACCEPTANCE_TARGET=aws`: nothing is
+defaulted then, so the SDK uses your own AWS credentials and region (deploy first with `pnpm --dir infra
+deploy:aws`; deploying to a real account is your call, agents ask first). CI always uses LocalStack. The API URL LocalStack outputs (`…execute-api.localhost.localstack.cloud:4566`) is used as is.
 
 ## Test data is fresh for every criterion
 

@@ -12,7 +12,8 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "synth": "cdk synth --quiet",
-    "deploy:local": "cdklocal destroy --force && cdklocal deploy --require-approval never -c includeEventSink=true"
+    "deploy:local": "cdklocal destroy --force && cdklocal deploy --require-approval never -c includeEventSink=true",
+    "deploy:aws": "cdk deploy --require-approval never -c includeEventSink=true"
   },
   "dependencies": {
     "@ledger/shared": "workspace:*",
