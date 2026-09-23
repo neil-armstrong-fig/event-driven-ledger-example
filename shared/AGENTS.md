@@ -2,14 +2,16 @@
 
 Bottom of the dependency graph — see the root `AGENTS.md` package table. Two jobs: `config/` holds
 the base tool configuration every other package extends (`eslint.base.js`, `prettier.base.js`,
-`tsconfig.base.json`, `vitest.base.ts`), and `src/` (not yet created) will hold the event schemas,
-DTOs, and JSON Schema for the API Gateway request validator model — the wire contract between
-`domain`/`worker` and `infra`.
+`tsconfig.base.json`, `vitest.base.ts`), and `src/` holds the event schemas, DTOs, and JSON Schema for
+the API Gateway request validator model — the wire contract between `domain`/`worker` and `infra`.
 
-**No `src/` yet.** This package is still config-only (Phase 2). Its first real content arrives
-whenever `domain` or `infra` first needs a shared type or schema — likely Phase 3 or Phase 4, not a
-dedicated phase of its own. Don't invent a folder layout ahead of that need; when the first schema
-lands, name its folder for the subject (e.g. `events/`), not `types/` or `dtos/`.
+First real content landed at Phase 4 step 4: `src/events/LedgerRequestSchema.ts` —
+`LEDGER_REQUEST_SCHEMA`, the plain JSON Schema object `infra`'s `LedgerApi` construct passes to the
+API GW request validator model (cast to CDK's own `JsonSchema` type at the `infra` call site, not here
+— `shared` stays framework-agnostic and does not import `aws-cdk-lib`). Typed as `JSONSchema4` from
+`@types/json-schema` (a types-only devDependency, matching the draft-04 default CDK's `Model`
+construct actually renders — confirmed against the synthesized snapshot, not assumed). Folder named
+for subject (`events/`), per convention.
 
 ## Import boundary
 

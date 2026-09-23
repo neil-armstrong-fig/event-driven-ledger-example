@@ -20,20 +20,27 @@ catalogMode: strict
 minimumReleaseAgeStrict: true
 
 catalog:
+  # ESLint's own recommended rule set, pulled in by shared's baseConfig for every package.
   "@eslint/js": 10.0.1
-  # Held at the Node 24 major to match the pinned runtime (.nvmrc, engines.node) rather than the
-  # current latest (26.6.2) — a newer major would type against Node APIs this project doesn't run.
+  # Type-only defs for shared's LEDGER_REQUEST_SCHEMA (the API GW request validator's JSON Schema).
+  "@types/json-schema": 7.0.15
+  # Node type defs — held at the Node 24 major to match the pinned runtime, not the latest major.
   "@types/node": 24.13.6
+  # The CDK L2 construct library infra's stacks and constructs are built on.
   aws-cdk-lib: 2.270.0
+  # The CDK constructs framework aws-cdk-lib itself requires as a peer.
   constructs: 10.8.1
+  # The linter every package runs via `pnpm lint`.
   eslint: 10.11.0
+  # Turns off ESLint rules that conflict with Prettier's formatting.
   eslint-config-prettier: 10.1.8
+  # Predefined global-variable sets (Node, ES2022) fed to ESLint's languageOptions.globals.
   globals: 17.12.0
-  # Not the catalog-latest (3.9.9) — that release was under 24h old and failed the
-  # minimumReleaseAgeStrict check. 3.9.6 is the version janggi already vetted.
+  # The formatter every package runs via `pnpm format` — 3.9.9 (latest) failed minimumReleaseAgeStrict.
   prettier: 3.9.6
-  # Pinned below the current latest (7.0.2) on purpose — TS7's native compiler breaks ts-node's
-  # programmatic API, confirmed during the Phase 1 spike. See AGENTS.md / docs/PLAN.md.
+  # The compiler — pinned below latest since TS7's native compiler breaks ts-node's API (Phase 1 spike).
   typescript: 6.0.3
+  # TypeScript-aware ESLint parser and rules, pulled in by shared's baseConfig for every package.
   typescript-eslint: 8.70.1
+  # The test runner every package's `test`/`checks` script runs.
   vitest: 5.0.1

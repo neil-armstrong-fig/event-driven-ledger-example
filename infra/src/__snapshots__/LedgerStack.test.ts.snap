@@ -2,6 +2,34 @@
 
 exports[`synthesizes the ledger stack with no unnoticed resource or property changes 1`] = `
 {
+  "Outputs": {
+    "ApiRestApiEndpoint4DEFB5CC": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "ApiRestApiE35FEAFE",
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region",
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix",
+            },
+            "/",
+            {
+              "Ref": "ApiRestApiDeploymentStageprodE828476C",
+            },
+            "/",
+          ],
+        ],
+      },
+    },
+  },
   "Parameters": {
     "BootstrapVersion": {
       "Default": "/cdk-bootstrap/hnb659fds/version",
@@ -10,6 +38,266 @@ exports[`synthesizes the ledger stack with no unnoticed resource or property cha
     },
   },
   "Resources": {
+    "ApiIntegrationRole44C91040": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "apigateway.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "ApiIntegrationRoleDefaultPolicy5AEAACEB": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "sqs:SendMessage",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "RequestQueueE69D5844",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "ApiIntegrationRoleDefaultPolicy5AEAACEB",
+        "Roles": [
+          {
+            "Ref": "ApiIntegrationRole44C91040",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "ApiRestApiDeploymentDC05A82D417d496af0580f300c3d61d46143c1e0": {
+      "DependsOn": [
+        "ApiRestApifractionalizationrequestsPOST9DEF08C4",
+        "ApiRestApifractionalizationrequests0B695B3C",
+        "ApiRestApiFractionalizationRequestModelFC2BCCBA",
+        "ApiRestApiRequestValidator8FC0F2B0",
+      ],
+      "Metadata": {
+        "aws:cdk:do-not-refactor": true,
+      },
+      "Properties": {
+        "Description": "Automatically created by the RestApi construct",
+        "RestApiId": {
+          "Ref": "ApiRestApiE35FEAFE",
+        },
+      },
+      "Type": "AWS::ApiGateway::Deployment",
+    },
+    "ApiRestApiDeploymentStageprodE828476C": {
+      "Properties": {
+        "DeploymentId": {
+          "Ref": "ApiRestApiDeploymentDC05A82D417d496af0580f300c3d61d46143c1e0",
+        },
+        "RestApiId": {
+          "Ref": "ApiRestApiE35FEAFE",
+        },
+        "StageName": "prod",
+      },
+      "Type": "AWS::ApiGateway::Stage",
+    },
+    "ApiRestApiE35FEAFE": {
+      "Properties": {
+        "Name": "RestApi",
+      },
+      "Type": "AWS::ApiGateway::RestApi",
+    },
+    "ApiRestApiFractionalizationRequestModelFC2BCCBA": {
+      "Properties": {
+        "ContentType": "application/json",
+        "RestApiId": {
+          "Ref": "ApiRestApiE35FEAFE",
+        },
+        "Schema": {
+          "$schema": "http://json-schema.org/draft-04/schema#",
+          "properties": {
+            "assetId": {
+              "minLength": 1,
+              "type": "string",
+            },
+            "requestId": {
+              "minLength": 1,
+              "type": "string",
+            },
+          },
+          "required": [
+            "assetId",
+            "requestId",
+          ],
+          "type": "object",
+        },
+      },
+      "Type": "AWS::ApiGateway::Model",
+    },
+    "ApiRestApiRequestValidator8FC0F2B0": {
+      "Properties": {
+        "RestApiId": {
+          "Ref": "ApiRestApiE35FEAFE",
+        },
+        "ValidateRequestBody": true,
+        "ValidateRequestParameters": true,
+      },
+      "Type": "AWS::ApiGateway::RequestValidator",
+    },
+    "ApiRestApifractionalizationrequests0B695B3C": {
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiRestApiE35FEAFE",
+            "RootResourceId",
+          ],
+        },
+        "PathPart": "fractionalization-requests",
+        "RestApiId": {
+          "Ref": "ApiRestApiE35FEAFE",
+        },
+      },
+      "Type": "AWS::ApiGateway::Resource",
+    },
+    "ApiRestApifractionalizationrequestsPOST9DEF08C4": {
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "POST",
+        "Integration": {
+          "Credentials": {
+            "Fn::GetAtt": [
+              "ApiIntegrationRole44C91040",
+              "Arn",
+            ],
+          },
+          "IntegrationHttpMethod": "POST",
+          "IntegrationResponses": [
+            {
+              "ResponseTemplates": {
+                "application/json": "{"message":"Accepted"}",
+              },
+              "SelectionPattern": "2\\d{2}",
+              "StatusCode": "202",
+            },
+            {
+              "ResponseTemplates": {
+                "application/json": "{"message":"Failed to enqueue the request"}",
+              },
+              "StatusCode": "500",
+            },
+          ],
+          "PassthroughBehavior": "NEVER",
+          "RequestParameters": {
+            "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'",
+          },
+          "RequestTemplates": {
+            "application/json": "#set($assetId = $input.path('$.assetId'))
+#set($idempotencyKey = $input.params('Idempotency-Key'))
+#set($action = "Action=SendMessage")
+#set($messageGroupId = "&MessageGroupId=$util.urlEncode($assetId)")
+#set($messageBody = "&MessageBody=$util.urlEncode($input.body)")
+#set($attributeName = "&MessageAttribute.1.Name=IdempotencyKey")
+#set($attributeType = "&MessageAttribute.1.Value.DataType=String")
+#set($attributeValue = "&MessageAttribute.1.Value.StringValue=$util.urlEncode($idempotencyKey)")
+#set($body = "$action$messageGroupId$messageBody$attributeName$attributeType$attributeValue")
+$body",
+          },
+          "Type": "AWS",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region",
+                },
+                ":sqs:path/",
+                {
+                  "Ref": "AWS::AccountId",
+                },
+                "/",
+                {
+                  "Fn::GetAtt": [
+                    "RequestQueueE69D5844",
+                    "QueueName",
+                  ],
+                },
+              ],
+            ],
+          },
+        },
+        "MethodResponses": [
+          {
+            "StatusCode": "202",
+          },
+          {
+            "StatusCode": "500",
+          },
+        ],
+        "RequestModels": {
+          "application/json": {
+            "Ref": "ApiRestApiFractionalizationRequestModelFC2BCCBA",
+          },
+        },
+        "RequestParameters": {
+          "method.request.header.Idempotency-Key": true,
+        },
+        "RequestValidatorId": {
+          "Ref": "ApiRestApiRequestValidator8FC0F2B0",
+        },
+        "ResourceId": {
+          "Ref": "ApiRestApifractionalizationrequests0B695B3C",
+        },
+        "RestApiId": {
+          "Ref": "ApiRestApiE35FEAFE",
+        },
+      },
+      "Type": "AWS::ApiGateway::Method",
+    },
+    "EventBusEEC924FB": {
+      "Properties": {
+        "Name": "LedgerStackEventBusECCC4319",
+      },
+      "Type": "AWS::Events::EventBus",
+    },
+    "IdempotencyTableE9369C9C": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "idempotencyKey",
+            "AttributeType": "S",
+          },
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "idempotencyKey",
+            "KeyType": "HASH",
+          },
+        ],
+      },
+      "Type": "AWS::DynamoDB::Table",
+      "UpdateReplacePolicy": "Delete",
+    },
     "RequestQueueDeadLetterQueue8059E85F": {
       "DeletionPolicy": "Delete",
       "Properties": {

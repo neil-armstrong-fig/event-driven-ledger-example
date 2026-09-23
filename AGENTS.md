@@ -60,6 +60,8 @@ No wrapper `describe` in unit test files — the filename already names the sing
 ## Ask before
 
 - Adding or upgrading any dependency.
+  - Once approved, every `pnpm-workspace.yaml` catalog entry needs a one-line comment directly above it saying why it's there (its role, plus the reason for any non-latest pin). Write the comment in the same edit as the entry, update it whenever the entry's purpose or pin rationale changes, and delete it with the entry — a stale comment is worse than none.
+  - `pnpm add --save-catalog` writes a caret range and a single-quoted key; change them to an exact pin and a double-quoted key to match the rest of the catalog, then update the lockfile in place with `pnpm install --lockfile-only` (an in-place update, not a from-scratch rebuild).
 - Deleting or rebuilding a lockfile.
 - Any destructive git operation (see the hard rule above — but also branch creation, stash, checkout of someone else's uncommitted work).
 - Deploying to a real (non-LocalStack) AWS account.
