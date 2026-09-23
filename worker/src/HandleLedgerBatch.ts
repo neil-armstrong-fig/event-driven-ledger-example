@@ -1,9 +1,19 @@
-interface LedgerBatchResponse {
-  batchItemFailures: {itemIdentifier: string}[];
+import {createLedgerDependencies} from "@src/aws/CreateLedgerDependencies";
+import {processLedgerBatch} from "@src/batch/ProcessLedgerBatch";
+import type {LedgerBatchRecord} from "@src/batch/types/LedgerBatchRecord";
+import type {LedgerBatchResponse} from "@src/batch/types/LedgerBatchResponse";
+import {requireEnv} from "@src/environment/RequireEnv";
+
+interface LedgerBatchEvent {
+  Records: LedgerBatchRecord[];
 }
 
-// Placeholder so infra's NodejsFunction has a real entry to bundle (Phase 4 step 5). Phase 5
-// replaces this, test-first, with the real handler.
-export function handleLedgerBatch(): Promise<LedgerBatchResponse> {
-  return Promise.resolve({batchItemFailures: []});
+// Built once per Lambda container so the SDK clients (and their connections) are reused across invocations.
+const dependencies = createLedgerDependencies({
+  tableName: requireEnv("LEDGER_TABLE_NAME"),
+  eventBusName: requireEnv("LEDGER_EVENT_BUS_NAME"),
+});
+
+export function handleLedgerBatch(event: LedgerBatchEvent): Promise<LedgerBatchResponse> {
+  return processLedgerBatch(event.Records, dependencies);
 }

@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
   "scripts": {
     "checks": "pnpm lint && pnpm format:check && pnpm type-check && pnpm test",
     "lint": "eslint --max-warnings=0 .",

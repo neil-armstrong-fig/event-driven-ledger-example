@@ -20,9 +20,9 @@ Also never: create/switch/delete branches, force-push, `git reset --hard`, or an
 | `infra` | CDK app, stacks, constructs. Deploys the worker's *built artifact* — never imports its source. CDK-output regression tests live here. | `shared` only |
 | `acceptance-tests` | ATDD DSL + given/when/then specs, run against a deployed LocalStack stack. | `shared`, plus its own `aws/*Client.ts` wrappers |
 
-Import boundaries are enforced by ESLint `no-restricted-imports`, deny-by-default (a new workspace package is denied until explicitly added to `allowedPackages` — same mechanism as janggi's `shared/config/eslint.base.js`). This is not a convention to remember and follow by hand — it's a lint failure if violated, so trust `pnpm checks` over memory.
+Import boundaries are enforced by ESLint `no-restricted-imports`, deny-by-default (a new workspace package is denied until explicitly added to `allowedPackages`). This is not a convention to remember and follow by hand — it's a lint failure if violated, so trust `pnpm checks` over memory.
 
-`docs/` holds only research or decisions that would otherwise need to be re-derived — see `docs/PLAN.md` for the project's full context and `docs/decisions/` (once written, Phase 8) for the two named architectural gaps (dedup-vs-idempotency, dual-write). Link code back to the doc section it implements, the way janggi's `IsBikjang.ts` cites `docs/rules.md §6.2`.
+`docs/` holds only research or decisions that would otherwise need to be re-derived — see `docs/PLAN.md` for the project's full context and `docs/decisions/` (once written, Phase 8) for the two named architectural gaps (dedup-vs-idempotency, dual-write). Link code back to the doc section it implements(e.g. a comment naming the `docs/` section a rule comes from).
 
 ## Before changing code
 
@@ -41,7 +41,9 @@ Import boundaries are enforced by ESLint `no-restricted-imports`, deny-by-defaul
 
 ## Unit test convention
 
-No wrapper `describe` in unit test files — the filename already names the single export under test (e.g. `BuildKycPassedEvent.ts` / `BuildKycPassedEvent.test.ts`), so write flat `it("...")` sentences at the top level. Reach for `describe` only when it says something the `it`s wouldn't otherwise each have to say (a narrowing `beforeEach`, genuinely different setups).
+No wrapper `describe` in unit test files — the filename already names the single export under test (e.g. `BuildKycPassedEvent.ts` / `BuildKycPassedEvent.test.ts`), so a plain function gets flat `it("...")` sentences at the top level.
+
+Reach for nested `describe`s when the subject has states that build on each other — a scenario that starts from a state, then a further event on top of it, then another. Each level's name says the state or event ("a ledger with nothing recorded" → "when two requests share an idempotency key…"), a `beforeEach` narrows it (arrange, or arrange and act), and each `it` makes one assertion about the outcome. Read top to bottom it tells the story of the behaviour and shows how each layer builds on the last, which is worth more than a flat list when the cases share setup. The test is the same either way; the question is whether a `describe` name says something the `it`s would otherwise each have to repeat, and a `describe` with nothing in `beforeEach` is just a filing cabinet — don't.
 
 **Acceptance specs are the opposite, deliberately**: nested `given`/`when`/`then` *is* the specification, not a wrapper to avoid.
 
@@ -59,6 +61,10 @@ No wrapper `describe` in unit test files — the filename already names the sing
 - Prefer named `export function` over `export default`.
 - No `../` relative-import climbing — use the package's path alias once one exists.
 
+## Reference implementation
+
+<https://github.com/neil-armstrong-fig/janggi> (open source) is the developer's fuller example of these code standards (a pnpm workspace with the same one-export-per-file, ESLint-enforced boundaries, DSL-based acceptance tests, and per-package `AGENTS.md` conventions). When a convention here is unclear or not yet demonstrated in this repo, read the equivalent there — for nested-`describe` unit tests, its webapp unit tests (e.g. `webapp/src/redux/ratings/RatingsSlice.test.ts`), not its acceptance tests. It's a reference to read, not code to copy: this repo's own `AGENTS.md` files win on any conflict.
+
 ## Ask before
 
 - Adding or upgrading any dependency.
@@ -75,7 +81,7 @@ No wrapper `describe` in unit test files — the filename already names the sing
 
 ## Other confirmed gotchas (proven during the Phase 1 spike — see `docs/PLAN.md` for full detail)
 
-- `typescript` is pinned to exactly `6.0.3` in every package — TS7's new native compiler breaks `ts-node`'s programmatic API (same root cause janggi's own `AGENTS.md` documents independently).
+- `typescript` is pinned to exactly `6.0.3` in every package — TS7's new native compiler breaks `ts-node`'s programmatic API.
 - `Idempotency-Key` travels as a native **SQS message attribute**, never spliced into the JSON message body via VTL string concatenation — that approach was tried and fails with a VTL parse error.
 - DynamoDB's idempotency table needs `removalPolicy: RemovalPolicy.DESTROY` set explicitly — CDK's default is `RETAIN`, which is correct for production but breaks fresh redeploys of this ephemeral demo stack.
 - Lambda runtime: use `nodejs22.x` or newer — `nodejs20.x` is already flagged deprecated.

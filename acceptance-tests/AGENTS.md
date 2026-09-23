@@ -7,7 +7,7 @@ ATDD DSL + given/when/then specs, run against a real deployed LocalStack stack â
 ## Import boundary
 
 `eslint.config.js`: `allowedPackages: ["@ledger/shared"]`. Beyond that lint-enforced boundary, the
-target layering (per `docs/PLAN.md`, mirroring janggi's DSL/mechanics split) is:
+target layering (per `docs/PLAN.md`, a DSL/mechanics split) is:
 
 ```
 dsl/*Dsl.ts      business vocabulary only â€” submitFractionalizationRequest, theRecordExists,

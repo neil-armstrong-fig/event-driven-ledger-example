@@ -2,7 +2,7 @@ import {App, Stack} from "aws-cdk-lib";
 import {Template} from "aws-cdk-lib/assertions";
 import {Queue} from "aws-cdk-lib/aws-sqs";
 
-import {LedgerApi} from "./LedgerApi";
+import {LedgerApi} from "@src/api/LedgerApi";
 
 it("requires the Idempotency-Key header on the fractionalization request", () => {
   const stack = new Stack(new App(), "TestStack");

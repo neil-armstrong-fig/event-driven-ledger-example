@@ -16,8 +16,7 @@ for subject (`events/`), per convention.
 ## Import boundary
 
 `eslint.config.js` sets `allowedPackages: ["@ledger/shared"]` — i.e. this package may only import
-itself, by its own name, never another workspace package. That self-import is intentional and mirrors
-janggi's `shared`: with `../` refused everywhere (`noParentImports` in `eslint.base.js`), one folder
+itself, by its own name, never another workspace package. That self-import is intentional: with `../` refused everywhere (`noParentImports` in `eslint.base.js`), one folder
 here reaches another the same way any external package would — `@ledger/shared/events/...` — never a
 relative climb.
 

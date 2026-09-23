@@ -9,6 +9,31 @@ construct code — see `docs/PLAN.md` Phase 4 for the exact resource order: (1) 
 (2) DynamoDB table, (3) EventBridge custom bus, (4) API GW + validator + direct SQS integration, (5)
 worker Lambda + event source mapping, (6) least-privilege IAM, (7) full-stack `cdk synth` via the CLI — all done.
 
+## Source layout
+
+The `src/` root is the table of contents: the stack, its test and snapshot, then one subfolder per
+resource, named for its subject. A helper used by one construct sits in a folder beneath it, never
+beside it. Imports use the `@src/*` alias, never `./` or `../`.
+
+```
+src/
+├── LedgerStack.ts                    the deployable stack — mounts every construct below
+├── LedgerStack.test.ts               whole-stack snapshot (asset hashes normalized)
+├── __snapshots__/
+├── queue/LedgerRequestQueue.ts       FIFO queue + FIFO DLQ
+├── idempotency/                      DynamoDB idempotency table
+│   ├── LedgerIdempotencyTable.ts
+│   └── LedgerIdempotencyTable.test.ts   DESTROY removal policy (own named assertion)
+├── events/LedgerEventBus.ts          custom EventBridge bus
+├── api/                              API Gateway → SQS
+│   ├── LedgerApi.ts
+│   ├── LedgerApi.test.ts             Idempotency-Key header is required
+│   └── request/LedgerApiRequestTemplate.ts   the VTL request template
+└── worker/                           worker Lambda + SQS event source + grants
+    ├── LedgerWorker.ts
+    └── workspace/FindWorkspaceRoot.ts        locates the worker entry file from the repo root
+```
+
 ## Import boundary
 
 `eslint.config.js`: `allowedPackages: ["@ledger/shared"]` only. **Never import `@ledger/worker` or

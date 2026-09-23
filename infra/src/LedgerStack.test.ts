@@ -1,7 +1,7 @@
 import {App} from "aws-cdk-lib";
 import {Template} from "aws-cdk-lib/assertions";
 
-import {LedgerStack} from "./LedgerStack";
+import {LedgerStack} from "@src/LedgerStack";
 
 const ASSET_HASH_PATTERN = /[0-9a-f]{64}\.zip/g;
 

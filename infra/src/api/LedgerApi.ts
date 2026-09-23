@@ -6,7 +6,7 @@ import {Construct} from "constructs";
 
 import {LEDGER_REQUEST_SCHEMA} from "@ledger/shared/events/LedgerRequestSchema";
 
-import {LEDGER_API_REQUEST_TEMPLATE} from "./LedgerApiRequestTemplate";
+import {LEDGER_API_REQUEST_TEMPLATE} from "@src/api/request/LedgerApiRequestTemplate";
 
 export interface LedgerApiProps {
   readonly queue: Queue;

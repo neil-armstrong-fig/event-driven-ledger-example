@@ -1,11 +1,11 @@
 import {Stack, type StackProps} from "aws-cdk-lib";
 import type {Construct} from "constructs";
 
-import {LedgerApi} from "./api/LedgerApi";
-import {LedgerEventBus} from "./events/LedgerEventBus";
-import {LedgerIdempotencyTable} from "./idempotency/LedgerIdempotencyTable";
-import {LedgerRequestQueue} from "./queue/LedgerRequestQueue";
-import {LedgerWorker} from "./worker/LedgerWorker";
+import {LedgerApi} from "@src/api/LedgerApi";
+import {LedgerEventBus} from "@src/events/LedgerEventBus";
+import {LedgerIdempotencyTable} from "@src/idempotency/LedgerIdempotencyTable";
+import {LedgerRequestQueue} from "@src/queue/LedgerRequestQueue";
+import {LedgerWorker} from "@src/worker/LedgerWorker";
 
 export class LedgerStack extends Stack {
   public readonly requestQueue: LedgerRequestQueue;

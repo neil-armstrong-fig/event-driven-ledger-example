@@ -20,16 +20,16 @@ Neil is very familiar with CDK/AWS/Lambda/TypeScript already, so this plan doesn
 
 ### Structural template
 
-`/home/neil/development/projects/janggi` was reviewed as the structural exemplar (pnpm workspace React PWA, no AWS/CDK infra itself, but excellent conventions). What was borrowed:
-- pnpm workspace, **`AGENTS.md`-only** AI instructions — fractally scoped (root + one per package + one per subfolder once conventions accumulate). No `CLAUDE.md` needed; Claude Code and Codex both load `AGENTS.md` natively. Janggi has no `.claude/` wiring beyond a bare `settings.json` permissions allowlist — nothing special to copy there.
+Conventions adopted for this repo:
+- pnpm workspace, **`AGENTS.md`-only** AI instructions — fractally scoped (root + one per package + one per subfolder once conventions accumulate). No `CLAUDE.md` needed; Claude Code and Codex both load `AGENTS.md` natively.
 - ESLint-enforced import boundaries (`no-restricted-imports`, deny-by-default per package) instead of code-review-enforced ones.
 - One export per file, named for its export, PascalCase.
-- Folders named for subject, not shape (`bikjang/` not `helpers/`).
-- ATDD via a DSL split into business vocabulary (`dsl/*Dsl.ts` — Action/Question/Query naming) vs. mechanics (janggi: `playwright/*Playwright.ts`; here: `aws/*Client.ts`).
-- Unit tests: **no wrapper `describe`** — flat `it(...)`, filename names the single export under test. Acceptance specs: nested `given`/`when`/`then` **is** the specification (opposite rule, deliberately).
+- Folders named for subject, not shape (`idempotency/` not `helpers/`).
+- ATDD via a DSL split into business vocabulary (`dsl/*Dsl.ts` — Action/Question/Query naming) vs. mechanics (`aws/*Client.ts` here).
+- Unit tests: **no wrapper `describe`** — flat `it(...)`, filename names the single export under test; nested `describe`s only for states that build on each other (see root `AGENTS.md`). Acceptance specs: nested `given`/`when`/`then` **is** the specification (opposite rule, deliberately).
 - A hard CI gate (`pnpm checks` = lint+format+typecheck+unit) kept separate from slower/flakier non-gating workflows.
 - "A passing test proves nothing until you've watched it fail" — mutation-testing-as-a-habit, written down as practice even without a dedicated tool.
-- TypeScript pinned to **6.0.3** — TS7's new native compiler breaks `ts-node`'s (and other tools') programmatic API. Confirmed independently during this project's own spike (see below) — same exact failure mode janggi documented.
+- TypeScript pinned to **6.0.3** — TS7's new native compiler breaks `ts-node`'s (and other tools') programmatic API. Confirmed independently during this project's own spike (see below).
 
 ## Decisions made (confirmed with Neil)
 
@@ -38,27 +38,27 @@ Neil is very familiar with CDK/AWS/Lambda/TypeScript already, so this plan doesn
 - **ATDD test target**: LocalStack, free "Hobby" tier (community edition was discontinued March 2026 — see Environment Setup below).
 - **Idempotency key**: client-supplied `Idempotency-Key` HTTP header, decoupled from FIFO `MessageGroupId`. **Design changed during the spike**: it's carried as a native **SQS message attribute** (`IdempotencyKey`), not spliced into the JSON body — see Gotcha 2 below for why.
 - **MessageGroupId**: per-`assetId` — realistic scaling story (parallel ordering per asset, confirmed working).
-- **Domain logic**: separate `@ledger/domain` package (pure, zero AWS-SDK imports, boundary enforced by ESLint) — Neil explicitly chose the separate-package option over folding it into `worker/src/domain/`, to match janggi's package-per-concern structure literally.
+- **Domain logic**: separate `@ledger/domain` package (pure, zero AWS-SDK imports, boundary enforced by ESLint) — Neil explicitly chose the separate-package option over folding it into `worker/src/domain/`, a package per concern.
 - **DynamoDB table removal policy**: `RemovalPolicy.DESTROY` (not CDK's default `RETAIN`) — this is an ephemeral demo/test stack, confirmed necessary during the spike (see Gotcha 3).
 - **Lambda runtime**: use `nodejs22.x` or `nodejs24.x` in the real build — `nodejs20.x` (used in the throwaway spike) is already flagged deprecated by AWS as of April 2026.
 
 ## Two gaps named explicitly (raised during design review — confirm exact approach with Neil at Phase 5)
 
 1. **Content-based dedup vs. the DynamoDB idempotency guard.** SQS FIFO `contentBasedDeduplication` silently drops a byte-identical duplicate message within its 5-minute window — before the `ConditionExpression` ever runs. The "zero double-spend" acceptance scenario must send two messages with the *same* `Idempotency-Key` header but a differing body field (a fresh `requestId`), so SQS treats them as distinct and the DynamoDB conditional write is what actually blocks the second one. **This has been proven working in the Phase 1 spike** (see below) — the design is validated, just needs the real implementation + acceptance test written this way.
-2. **Dual-write gap (DynamoDB succeeds, EventBridge `PutEvents` fails).** On SQS redelivery, the conditional check then fails (idempotent by design) and the event never fires — a real gap an interviewer would probe. Cheapest in-scope fix: also emit the event on a `ConditionalCheckFailedException` (delivery becomes deliberately at-least-once, consumers must be idempotent) — and name DynamoDB-Streams-to-EventBridge-Pipes as the documented "outbox pattern" evolution path on the diagram, not built. **Not yet decided with Neil** — do this at Phase 5, step 1.
+2. **Dual-write gap (DynamoDB succeeds, EventBridge `PutEvents` fails).** On SQS redelivery, the conditional check then fails (idempotent by design) and the event never fires — a real gap an interviewer would probe. Cheapest in-scope fix: also emit the event on a `ConditionalCheckFailedException` (delivery becomes deliberately at-least-once, consumers must be idempotent) — and name DynamoDB-Streams-to-EventBridge-Pipes as the documented "outbox pattern" evolution path on the diagram, not built. **Decided (Neil, Phase 5 step 1): emit on `ConditionalCheckFailedException` too.** The outbox pattern stays a documented, unbuilt evolution path. Consequence for the double-spend acceptance spec: two same-key requests produce two events, so it asserts exactly one DynamoDB record and that every emitted event carries the same `idempotencyKey`, not "exactly one event".
 
 ## Environment setup (already done — don't redo)
 
 - **Git**: repo initialized at `/home/neil/development/practice/event-driven-ledger`, default branch `main`. `.gitignore` committed first (excludes the CV file by exact name, `*:Zone.Identifier` WSL artifacts, `node_modules/`, `cdk.out/`, `.env`, etc.) — **verify this file still exists and covers the CV before adding anything else**.
 - **LocalStack account**: Neil created a free Hobby-tier account and put `LOCALSTACK_AUTH_TOKEN=<token>` in a gitignored `.env` at the repo root. To use it: `set -a; source .env; set +a` (or equivalent) before any `docker run` that needs it. **Do not commit `.env`. Do not print the token to chat/logs.**
 - **Docker**: works from this WSL2 distro (Docker Desktop WSL integration enabled by Neil mid-session). If a fresh session finds Docker unreachable again, that's a Neil-side fix (Docker Desktop → Settings → Resources → WSL Integration), not something to work around.
-- **Tooling confirmed installed and working**: Node `v24.13.1`, pnpm `12.3.4` (both already match janggi's pinned versions — no action needed), npm `11.8.0`. **No system-wide `aws` CLI, `awslocal`, `cdklocal`, or `pip3` available** — everything was done via `npx` (`aws-cdk`, `aws-cdk-local`) and the AWS SDK for JS directly (no Python tooling needed or used). `awslocal` **is** available *inside* the LocalStack container itself via `docker exec localstack-spike awslocal ...` if ever needed for quick inspection.
+- **Tooling confirmed installed and working**: Node `v24.13.1`, pnpm `12.3.4` (no action needed), npm `11.8.0`. **No system-wide `aws` CLI, `awslocal`, `cdklocal`, or `pip3` available** — everything was done via `npx` (`aws-cdk`, `aws-cdk-local`) and the AWS SDK for JS directly (no Python tooling needed or used). `awslocal` **is** available *inside* the LocalStack container itself via `docker exec localstack-spike awslocal ...` if ever needed for quick inspection.
 
 ## Repo layout (target — not yet built beyond `.gitignore`)
 
 ```
 event-driven-ledger/
-├── AGENTS.md                      # root — fractal, like janggi's
+├── AGENTS.md                      # root — fractal, one per package
 ├── .gitignore                     # DONE — CV file + *:Zone.Identifier + node_modules etc.
 ├── .env                           # DONE (gitignored) — LOCALSTACK_AUTH_TOKEN
 ├── package.json / pnpm-workspace.yaml
@@ -74,17 +74,17 @@ event-driven-ledger/
 └── .github/workflows/             # ci.yml (gating) — acceptance run against LocalStack service container — NOT YET WRITTEN
 ```
 
-Import boundaries (ESLint `no-restricted-imports`, deny-by-default like janggi): `shared` → nothing; `domain` → `shared` only, **no `@aws-sdk/*`, no `aws-cdk-lib`**; `worker` → `domain` + `shared`; `infra` → `shared` only (never imports `domain`/`worker` source — it *deploys* the worker's built artifact); `acceptance-tests` → `shared` only, plus its own `aws/*Client.ts` for SDK calls, never AWS SDK inside `dsl/*`.
+Import boundaries (ESLint `no-restricted-imports`, deny-by-default): `shared` → nothing; `domain` → `shared` only, **no `@aws-sdk/*`, no `aws-cdk-lib`**; `worker` → `domain` + `shared`; `infra` → `shared` only (never imports `domain`/`worker` source — it *deploys* the worker's built artifact); `acceptance-tests` → `shared` only, plus its own `aws/*Client.ts` for SDK calls, never AWS SDK inside `dsl/*`.
 
 ## Testing pyramid
 
 | Layer | Tool | Lives in | Proves |
 |---|---|---|---|
-| Unit | Vitest | `domain/src/**/*.test.ts`, flat `it(...)`, no wrapper `describe` (janggi convention) | idempotency-key handling, `KYC_PASSED_STUB` event payload shaping — pure functions |
+| Unit | Vitest | `domain/src/**/*.test.ts`, flat `it(...)`, no wrapper `describe` (nested `describe`s only where states build on each other) | idempotency-key handling, `KYC_PASSED_STUB` event payload shaping — pure functions |
 | CDK output (regression) | Vitest + `aws-cdk-lib/assertions` | `infra/src/**/*.test.ts`, colocated with the construct/stack like every other package (no separate `test/` folder) | one `toMatchSnapshot()` of the synthesized `LedgerStack` template (Lambda asset hashes/`S3Key`s normalized out once a Lambda exists) — catches a resource rename/removal or property drift from a TypeScript refactor as a reviewable diff, without the brittleness of itemized `hasResourceProperties` checks. Reach for a fine-grained assertion only for one specific invariant that deserves its own named failure message, not as the default per resource |
 | Acceptance (ATDD) | plain HTTP/AWS-SDK clients + custom DSL, run against LocalStack | `acceptance-tests/src/**` | the real event-driven physics end-to-end: 202 → SQS → Lambda → conditional DynamoDB write → EventBridge emission |
 
-DSL shape mirrors janggi: `dsl/LedgerDsl.ts` (business vocabulary only — `submitFractionalizationRequest`, `theRecordExists`, `theEventWasEmitted`; Action/Question/Query naming) wrapping `aws/LedgerApiClient.ts` + `aws/LedgerAwsResourcesClient.ts` (actual `fetch`/AWS-SDK calls, real errors propagate raw). "Waits briefly" becomes an `eventually(poll, timeout)` helper, not a fixed `sleep`. EventBridge assertion needs a sink (rule → SQS queue) — **confirmed working pattern, see Phase 1 results** — deployed only behind a CDK context flag so it never ships in a real deployment.
+DSL shape: `dsl/LedgerDsl.ts` (business vocabulary only — `submitFractionalizationRequest`, `theRecordExists`, `theEventWasEmitted`; Action/Question/Query naming) wrapping `aws/LedgerApiClient.ts` + `aws/LedgerAwsResourcesClient.ts` (actual `fetch`/AWS-SDK calls, real errors propagate raw). "Waits briefly" becomes an `eventually(poll, timeout)` helper, not a fixed `sleep`. EventBridge assertion needs a sink (rule → SQS queue) — **confirmed working pattern, see Phase 1 results** — deployed only behind a CDK context flag so it never ships in a real deployment.
 
 ---
 
@@ -110,7 +110,7 @@ Done in a throwaway scratch project (`/tmp/.../scratchpad/localstack-spike`, not
 
 ### Bugs/gotchas found and fixed during the spike (all must carry into the real build)
 
-- **TypeScript must be pinned to `6.0.3`** in every package (`ts-node`, and likely other tooling, breaks against TS7's new native compiler — same root cause janggi's `AGENTS.md` documents). Add `"typescript": "6.0.3"` as an exact-pinned devDependency everywhere.
+- **TypeScript must be pinned to `6.0.3`** in every package (`ts-node`, and likely other tooling, breaks against TS7's new native compiler). Add `"typescript": "6.0.3"` as an exact-pinned devDependency everywhere.
 - **Do not try to splice the `Idempotency-Key` header into the SQS `MessageBody` via VTL string concatenation.** AWS's VTL engine cannot cleanly handle escaped double-quotes inside a `$util.urlEncode("...")` argument (tested, fails with a VTL parse error). The fix — and the correct final design — is to keep `MessageBody` as an exact passthrough of the original request body, and carry `Idempotency-Key` as a **native SQS message attribute** instead (see the VTL template above). The worker Lambda reads it via `record.messageAttributes.IdempotencyKey.stringValue`, not from the parsed body.
 - **DynamoDB tables default to `RemovalPolicy.RETAIN`** in CDK (this is correct real-AWS behavior, not a LocalStack quirk) — set `removalPolicy: RemovalPolicy.DESTROY` explicitly on the idempotency table in `infra`, since this is an ephemeral demo/test stack. Forgetting this causes `ResourceInUseException: Table already exists` on the next fresh deploy attempt after a stack teardown, and can leave CloudFormation stacks stuck in `DELETE_FAILED`.
 - **Critical, general LocalStack limitation: any redeploy onto an already-running LocalStack stack that includes an API Gateway breaks the API Gateway Stage**, even for unrelated changes (confirmed this happens for a validator addition AND for a pure Lambda-code-only change). Symptom: `cdklocal deploy` reports success, CloudFormation shows the Stage resource as `UPDATE_COMPLETE`, but `GetStages` returns empty and every request 404s with `"The API id '...' does not correspond to a deployed API Gateway API"`. **The only reliable fix found is `cdklocal destroy --force` followed by a fresh `cdklocal deploy`.** This must be the standard local dev-loop workflow for this project whenever `infra` changes and involves API Gateway (which is almost always, since it's the walking skeleton's entry point) — document this loudly in `infra/AGENTS.md`. CI is unaffected since Phase 7's LocalStack container always starts fresh per run.
@@ -134,7 +134,7 @@ The spike's `bin/app.ts` (single-file, not the real package structure) and `src/
 ### Phase 2 — Repo scaffold: **NEXT UP — see TODO.md**
 1. `git init` — **DONE** (repo is on `main`, `.gitignore` committed as the first commit). No further action needed here.
 2. pnpm workspace + 5 empty packages (`shared`, `domain`, `worker`, `infra`, `acceptance-tests`) + verify `.gitignore` still covers everything needed. **STOP.**
-3. Shared tool config factories (`eslint.base.js`, `prettier.base.js`, `tsconfig.base.json` — **remember to pin `typescript: 6.0.3`** per the spike finding — `vitest.base.ts`) wired into each package, following janggi's `shared/config/` factory-function pattern (`baseConfig({tsconfigRootDir, allowedPackages})`). **STOP.**
+3. Shared tool config factories (`eslint.base.js`, `prettier.base.js`, `tsconfig.base.json` — **remember to pin `typescript: 6.0.3`** per the spike finding — `vitest.base.ts`) wired into each package, as factory functions (`baseConfig({tsconfigRootDir, allowedPackages})`). **STOP.**
 4. Root + per-package `AGENTS.md` (ATDD-first workflow, no-`describe` unit rule, import boundaries, one-export-per-file, "read AGENTS.md on your path before editing", **plus the LocalStack destroy-before-redeploy gotcha documented in `infra/AGENTS.md`**). Neil reviews the actual rule text, not just that the files exist. **STOP.**
 
 ### Phase 3 — `domain` package, TDD

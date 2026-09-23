@@ -1,9 +1,31 @@
 # AGENTS.md — worker
 
 The SQS-batch Lambda handler: wires `domain`'s pure logic to real AWS SDK calls — see the root
-`AGENTS.md` package table. `src/` holds only a placeholder `HandleLedgerBatch.ts` (returns no failures) so `infra` has an entry to bundle; Phase 5 replaces it test-first. This package is built at Phase 5, after `domain`
+`AGENTS.md` package table. The `src/` root is the table of contents; everything else sits in a subfolder named for its subject. This package is built at Phase 5, after `domain`
 (Phase 3) and `infra` (Phase 4) both exist — the handler needs `domain`'s idempotency/event-shaping
 functions and needs `infra`'s resource shapes (queue, table, bus) settled first.
+
+## Source layout
+
+```
+src/
+├── HandleLedgerBatch.ts            Lambda entry (infra bundles this file by path — don't move it)
+├── batch/                          the tested logic: no AWS SDK, dependencies injected
+│   ├── ProcessLedgerBatch.ts       walks the batch, applies the FIFO partial-failure rule
+│   ├── ProcessLedgerBatch.test.ts
+│   ├── record/                     handling one SQS record
+│   │   ├── ProcessRecord.ts        record the key, then emit the event (both paths — Gap #2)
+│   │   └── LedgerRequestBody.ts
+│   └── types/                      the batch's shapes (record, response, outcome, dependencies)
+├── aws/                            the thin SDK adapter — no unit test; proven by Phase 6 acceptance tests
+│   ├── CreateLedgerDependencies.ts wires the two calls below into the batch's dependencies
+│   ├── dynamodb/RecordRequest.ts   conditional PutItem → "recorded" | "already-recorded"
+│   └── eventbridge/PublishKycPassed.ts
+└── environment/RequireEnv.ts       fail-fast env var read
+```
+
+Imports use the `@src/*` alias, never `../`. esbuild honours it when `infra` bundles the entry (checked
+with `pnpm synth`).
 
 ## Import boundary
 
@@ -18,10 +40,9 @@ pure/testable-without-AWS to `domain` instead of duplicating it inline.
 Per `docs/PLAN.md` and `TODO.md`, **step 1 of this phase is a decision, not code**: confirm with the developer
 the dual-write approach for Gap #2 before writing a single test.
 
-- **Gap #2 (dual-write)**: on `ConditionalCheckFailedException` from the DynamoDB conditional write,
-  does the handler still emit `KYC_PASSED_STUB` (at-least-once, consumers must be idempotent — the
-  cheaper in-scope fix) or is that path left as a documented-but-unbuilt outbox-pattern diagram talking
-  point? Not yet decided — see `docs/PLAN.md` Gap #2 for the full tradeoff.
+- **Gap #2 (dual-write)**: decided — on `ConditionalCheckFailedException` from the DynamoDB conditional
+  write, the handler still emits `KYC_PASSED_STUB` (at-least-once, consumers must be idempotent). The
+  outbox pattern stays a documented-but-unbuilt diagram talking point. See `docs/PLAN.md` Gap #2.
 - **Gap #1 (dedup vs. idempotency)** is already resolved by design and proven in the Phase 1 spike:
   the double-spend test sends the same `Idempotency-Key` **message attribute** (never body-spliced —
   see the root `AGENTS.md` gotchas) with a differing `requestId` in the body, so SQS content-based dedup

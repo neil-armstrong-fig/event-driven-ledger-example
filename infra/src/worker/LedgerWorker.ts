@@ -9,7 +9,7 @@ import {SqsEventSource} from "aws-cdk-lib/aws-lambda-event-sources";
 import type {IQueue} from "aws-cdk-lib/aws-sqs";
 import {Construct} from "constructs";
 
-import {findWorkspaceRoot} from "./FindWorkspaceRoot";
+import {findWorkspaceRoot} from "@src/worker/workspace/FindWorkspaceRoot";
 
 const WORKER_ENTRY = path.join(findWorkspaceRoot(import.meta.dirname), "worker/src/HandleLedgerBatch.ts");
 const BATCH_SIZE = 5;
