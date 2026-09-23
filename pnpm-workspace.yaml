@@ -4,3 +4,34 @@ packages:
   - worker
   - infra
   - acceptance-tests
+
+# strict: `pnpm add` refuses to add a package that's already in the catalog at a different
+# version, so a new install can't drift silently. This only gates the `pnpm add` CLI path —
+# verified empirically that a hand-edited package.json version outside the catalog installs
+# without complaint, so it's not a substitute for reviewing package.json diffs by eye.
+catalogMode: strict
+
+# Refuse to resolve any dependency published in the last 24h instead of silently falling back to
+# one that fails the check (pnpm's non-strict default) — supply-chain-attack packages are
+# typically pulled within hours of publish, so a hard age floor is worth the occasional wait on a
+# same-day release. Strict resolution failure forces a deliberate, reviewable
+# `minimumReleaseAgeExclude` entry rather than a silent bypass. No exclusions currently needed —
+# every catalog version below is older than 24h.
+minimumReleaseAgeStrict: true
+
+catalog:
+  "@eslint/js": 10.0.1
+  # Held at the Node 24 major to match the pinned runtime (.nvmrc, engines.node) rather than the
+  # current latest (26.6.2) — a newer major would type against Node APIs this project doesn't run.
+  "@types/node": 24.13.6
+  eslint: 10.11.0
+  eslint-config-prettier: 10.1.8
+  globals: 17.12.0
+  # Not the catalog-latest (3.9.9) — that release was under 24h old and failed the
+  # minimumReleaseAgeStrict check. 3.9.6 is the version janggi already vetted.
+  prettier: 3.9.6
+  # Pinned below the current latest (7.0.2) on purpose — TS7's native compiler breaks ts-node's
+  # programmatic API, confirmed during the Phase 1 spike. See AGENTS.md / docs/PLAN.md.
+  typescript: 6.0.3
+  typescript-eslint: 8.70.1
+  vitest: 5.0.1
