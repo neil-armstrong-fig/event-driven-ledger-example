@@ -6,6 +6,11 @@ A walking skeleton of a tokenised-asset ledger: a client submits a fractionalisa
 flowchart TB
     client([Client])
     provider(["KYC provider<br/>(not built)"])
+    authoriser(["Authoriser<br/>(not built)<br/>Cognito or JWT"])
+    registry(["Asset registry<br/>(not built)"])
+    sanctions(["Sanctions screening<br/>(not built)"])
+    status(["Status endpoint or webhook<br/>(not built)"])
+    ops(["Alarms and tracing<br/>(not built)"])
 
     subgraph aws[" "]
         apigw["API Gateway<br/>JSON Schema validator<br/>requires Idempotency-Key and Customer-Id headers"]
@@ -42,10 +47,29 @@ flowchart TB
 
     downstream ~~~ sink
 
+    authoriser -. "not built: supplies Customer-Id<br/>in place of the header" .-> apigw
+    worker -. "not built: does the asset exist,<br/>is the customer its owner,<br/>is it free to fractionalise" .-> registry
+    worker -. "not built: second gate<br/>beside KYC" .-> sanctions
+    bus -. "not built: feeds the outcome" .-> status
+    status -. "not built: the client only got 202" .-> client
+    dlq -. "not built: depth alarm, redrive" .-> ops
+
     linkStyle 12,13 stroke:#d98e04,stroke-width:2px
 ```
 
-The outer box is the CDK `LedgerStack` (its title is left blank so the client edges don't cross it). Solid lines are built. Dotted grey lines are not built (downstream consumers, the outbox path, the KYC provider's feed). Dotted orange lines exist only in the acceptance-test stack (the sink).
+The outer box is the CDK `LedgerStack` (its title is left blank so the client edges don't cross it). Solid lines are built. Dotted grey lines are not built (see below). Dotted orange lines exist only in the acceptance-test stack (the sink).
+
+## Not built, on purpose
+
+Each of these is a real part of a production system, drawn so the omission reads as a decision. None adds a new architectural idea beyond what is already built, so none is worth the code.
+
+- **Downstream consumers and the outbox path.** The events are the contract; who listens is out of scope. The outbox is the documented fix for the dual write ([0002](decisions/0002-dual-write.md)).
+- **KYC provider's status feed.** The acceptance tests seed the KYC table in its place ([0003](decisions/0003-kyc-gating.md)).
+- **Authoriser.** Supplies the customer's identity. `Customer-Id` is the stand-in, and the request template is the one place that changes ([0003](decisions/0003-kyc-gating.md)).
+- **Asset registry.** Would check that the asset exists, that the customer owns it and that it is free to fractionalise. It has the same shape as the KYC gate: a table, a pure rule, a recorded decision.
+- **Sanctions screening.** A second external gate beside KYC, again the same shape.
+- **Status endpoint or webhook.** The client only gets `202` ("queued"). Telling it the outcome is a consumer of the events.
+- **Alarms and tracing.** A DLQ depth alarm and a redrive procedure, plus request tracing from the API to the event.
 
 ## The boxes
 
