@@ -2,13 +2,31 @@
 
 An example event-driven architecture on AWS, built the way it would be built for real: test-first, with the infrastructure's output under regression test and the module boundaries enforced by the linter.
 
-It is a deliberately small "walking skeleton" of a tokenized-asset ledger. A client submits a fractionalization request; the system accepts it, records it **exactly once**, and announces it as a `KYC_PASSED_STUB` event. There is no Web3 logic and no third-party KYC — just the plumbing.
+It is a deliberately small "walking skeleton" of a tokenised-asset ledger. A client submits a fractionalisation request; the system accepts it, records it **exactly once**, and announces it as a `KYC_PASSED_STUB` event. There is no Web3 logic and no third-party KYC — just the plumbing.
 
 ```
 Client → API Gateway → SQS FIFO → Worker Lambda → DynamoDB (conditional write) → EventBridge
 ```
 
 See [`docs/architecture.md`](docs/architecture.md) for the diagram and a paragraph per box.
+
+## What is fractionalisation?
+
+Fractionalisation means dividing ownership of a single asset (a painting, a building, a bond) into many small shares, so that several people can each hold a piece. It is the same idea as a fractional share of a stock. Recording who owns which fraction is a ledger problem, and a ledger is only trustworthy if each change is written down exactly once.
+
+A **fractionalisation request** is a client's ask to have an asset fractionalised. It carries:
+
+- `assetId`: the asset to fractionalise. It is also the FIFO `MessageGroupId`, so requests for one asset are processed in order while different assets run in parallel.
+- `requestId`: the client's identifier for this request.
+- an `Idempotency-Key` header: the client's retry token. Sending the same key again, for example after a timeout, must not create a second record.
+
+This project handles the **intake** side only. It accepts the request, records it once, and announces the outcome with a `KYC_PASSED_STUB` event, standing in for a real know-your-customer check. It does not decide share counts or prices, and it does not issue tokens. Those belong to consumers of the event, which are not built. The exactly-once record is what makes replays safe: a repeated key is recognised and never recorded twice ([ADR 0001](docs/decisions/0001-dedup-vs-idempotency.md)).
+
+### What is KYC?
+
+**KYC** stands for **Know Your Customer**: the identity check that banks, brokers and asset platforms are legally required to complete before a person can transact. It usually means verifying who someone is (an ID document, proof of address, sometimes a selfie check) and screening them against sanctions and fraud lists, as part of anti-money-laundering rules. On a real fractionalisation platform, KYC would have to pass before a client could buy or hold fractions of an asset.
+
+Here it is deliberately fake. `KYC_PASSED_STUB` is only an event name meaning "pretend the check passed": nothing is verified, and no third-party KYC service is called. It gives the pipeline a realistic success event to emit, and a real KYC service could later sit behind that event.
 
 ## What it demonstrates
 
@@ -23,7 +41,7 @@ See [`docs/architecture.md`](docs/architecture.md) for the diagram and a paragra
 
 - **Acceptance-test-first (ATDD).** Given/when/then specs read as business language, run against a real deployed stack, and talk only to a small DSL. The DSL sits over AWS clients, and lint rules stop a spec from touching the SDK or the network directly.
 - **Unit-test-first** for the pure logic in `domain`, with the habit of watching every test fail for the right reason before trusting it.
-- **Infrastructure is tested too.** The synthesized CloudFormation of the whole stack is snapshot-tested (Lambda asset hashes normalized out, so a diff always means something), plus a few named assertions for properties that must never regress. A contract test keeps the acceptance stack and the acceptance tests from drifting apart.
+- **Infrastructure is tested too.** The synthesised CloudFormation of the whole stack is snapshot-tested (Lambda asset hashes normalised out, so a diff always means something), plus a few named assertions for properties that must never regress. A contract test keeps the acceptance stack and the acceptance tests from drifting apart.
 - **Boundaries enforced by lint, not convention.** Deny-by-default `no-restricted-imports` per package; `domain` cannot import an AWS SDK; `infra` deploys the worker's built artifact and never imports its source.
 - **One export per file**, PascalCase, folders named for subject, top-down reading order.
 - **A hard CI gate** (`pnpm checks`: lint, format, type-check, unit and CDK snapshot tests) ahead of a slower acceptance job against LocalStack.

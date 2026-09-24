@@ -34,10 +34,10 @@ Import boundaries are enforced by ESLint `no-restricted-imports`, deny-by-defaul
 
 ## How work is done here — TDD/ATDD, not just as a slogan
 
-- **Acceptance-test-first**: for any user-observable behavior, write the given/when/then spec before the implementation, watch it fail for the *right* reason (not a typo, not a missing import — the actual behavior under test), then make it pass.
+- **Acceptance-test-first**: for any user-observable behaviour, write the given/when/then spec before the implementation, watch it fail for the *right* reason (not a typo, not a missing import — the actual behaviour under test), then make it pass.
 - **Unit-test-first** for pure logic in `domain`: red, then green, then move on. Don't write the implementation first and backfill tests.
 - **A passing test proves nothing until you've watched it fail.** For any test you didn't just write red-then-green yourself (inherited, retrofitted, or written by another agent), deliberately break the code it covers, run it, confirm it fails for the right reason, then restore. This is a required verification step, not an optional audit.
-- **CDK output is tested too**, not just application code — see "How it is tested" in `docs/architecture.md`. A CDK snapshot test with an unnormalized Lambda asset hash trains people to blindly run `-u`; normalize asset hashes/`S3Key`s out of the serializer so snapshot diffs stay meaningful.
+- **CDK output is tested too**, not just application code — see "How it is tested" in `docs/architecture.md`. A CDK snapshot test with an unnormalised Lambda asset hash trains people to blindly run `-u`; normalise asset hashes/`S3Key`s out of the serialiser so snapshot diffs stay meaningful.
 
 ## Unit test convention
 
@@ -60,6 +60,7 @@ Reach for nested `describe`s when the subject has states that build on each othe
 - Explicit function return types; `import type` for type-only imports.
 - Prefer named `export function` over `export default`.
 - No `../` relative-import climbing — use the package's path alias once one exists.
+- British spelling in prose (comments, docs, this file); American spelling in code itself (identifiers, file names, string literals such as test titles, the API path), because SDKs and libraries are American English. Established terms such as pnpm's `catalog` keep their own spelling.
 
 ## Reference implementation
 

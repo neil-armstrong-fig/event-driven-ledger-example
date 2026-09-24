@@ -15,7 +15,7 @@ beside it. Imports use the `@src/*` alias, never `./` or `../`.
 ```
 src/
 ├── LedgerStack.ts                    the deployable stack — mounts every construct below
-├── LedgerStack.test.ts               two whole-stack snapshots — production and acceptance-test (`includeEventSink`) — asset hashes normalized, plus the sink gate and the outputs contract
+├── LedgerStack.test.ts               two whole-stack snapshots — production and acceptance-test (`includeEventSink`) — asset hashes normalised, plus the sink gate and the outputs contract
 ├── __snapshots__/
 ├── queue/LedgerRequestQueue.ts       FIFO queue + FIFO DLQ
 ├── idempotency/                      DynamoDB idempotency table
@@ -40,7 +40,7 @@ src/
 root `AGENTS.md` package table, this package "deploys the worker's built artifact — never imports its
 source." `NodejsFunction`'s `entry` points at a `worker/src/` file by path
 (never a TypeScript import) and esbuild bundles it at synth. Because `Template.fromStack` in the
-snapshot test synthesizes for real, a worker that can't be found or bundled fails `pnpm checks` (and so
+snapshot test synthesises for real, a worker that can't be found or bundled fails `pnpm checks` (and so
 the CI gate) — verified with a missing `entry`. esbuild doesn't type-check; `worker`'s own `type-check`
 does.
 
@@ -86,7 +86,7 @@ update is safe to test against, even for a change that looks trivial. This does 
   of the request body, `Idempotency-Key` goes in as `MessageAttribute.1.*`, never spliced into the JSON
   body. The message-attribute approach is a hard requirement, not a style choice — see the root
   `AGENTS.md` gotchas for the VTL parse error that ruled out body-splicing.
-- **CDK output is tested by snapshot, not itemized assertions.** The developer's call: fine-grained
+- **CDK output is tested by snapshot, not itemised assertions.** The developer's call: fine-grained
   `hasResourceProperties` checks per resource are too restrictive against ordinary TypeScript
   refactors — the goal is catching a _sneaky_ rename/property change a refactor introduced by
   accident, not pinning every property by hand. One `toMatchSnapshot()` of `Template.fromStack(new
@@ -96,7 +96,7 @@ LedgerStack(...)).toJSON()` — the real stack, not a per-construct test-only st
   catches a rename (not just a hypothetical): renaming a construct's mount id changes its
   CloudFormation logical ID hash, which shows up as a full resource replacement in the diff. Reach for
   a fine-grained assertion only when a specific property is important enough to deserve its own named
-  failure message. The Lambda asset `S3Key` hash is normalized out in `LedgerStack.test.ts`,
+  failure message. The Lambda asset `S3Key` hash is normalised out in `LedgerStack.test.ts`,
   so a worker code change doesn't churn the snapshot and train people to blindly run `-u`. The `.snap` file must be committed —
   Vitest only fails on a _missing_ snapshot, so an uncommitted one gives zero protection.
 - **LocalStack Hobby tier has no official CI support** — the CI `acceptance` job can fail for licensing

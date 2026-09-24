@@ -7,7 +7,7 @@ import {LedgerStack} from "@src/LedgerStack";
 const ASSET_HASH_PATTERN = /[0-9a-f]{64}\.zip/g;
 
 /**
- * The stack is synthesized two ways: as it ships, and with the `includeEventSink` context flag the
+ * The stack is synthesised two ways: as it ships, and with the `includeEventSink` context flag the
  * acceptance tests deploy it with. Each has its own snapshot, so a change to either shows up as its
  * own reviewable diff — and a change that makes the acceptance stack stop providing what the specs
  * read is caught here, at `pnpm checks`, rather than as a hard-to-debug failure mid-run.
@@ -16,7 +16,7 @@ describe("the production stack", () => {
   const template = Template.fromStack(new LedgerStack(new App(), "LedgerStack"));
 
   it("synthesizes with no unnoticed resource or property changes", () => {
-    // The Lambda asset's S3Key is a content hash of the bundle — normalized so a worker code change
+    // The Lambda asset's S3Key is a content hash of the bundle — normalised so a worker code change
     // doesn't churn the snapshot (and train everyone to blindly run `-u`).
     expect(normalizeAssetHashes(template.toJSON())).toMatchSnapshot();
   });

@@ -10,7 +10,7 @@ Its schema lives in `src/events/LedgerRequestSchema.ts` —
 API GW request validator model (cast to CDK's own `JsonSchema` type at the `infra` call site, not here
 — `shared` stays framework-agnostic and does not import `aws-cdk-lib`). Typed as `JSONSchema4` from
 `@types/json-schema` (a types-only devDependency, matching the draft-04 default CDK's `Model`
-construct actually renders — confirmed against the synthesized snapshot, not assumed). Folder named
+construct actually renders — confirmed against the synthesised snapshot, not assumed). Folder named
 for subject (`events/`), per convention.
 
 `src/stack/LedgerStackOutputs.ts` (`LEDGER_STACK_OUTPUTS`, the CloudFormation output names) and

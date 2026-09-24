@@ -1,6 +1,6 @@
 # Architecture
 
-A walking skeleton of a tokenized-asset ledger: a client submits a fractionalization request, it is queued, recorded exactly once, and announced as a `KYC_PASSED_STUB` event. The two decisions that need explaining are recorded in [0001](decisions/0001-dedup-vs-idempotency.md) and [0002](decisions/0002-dual-write.md).
+A walking skeleton of a tokenised-asset ledger: a client submits a fractionalisation request, it is queued, recorded exactly once, and announced as a `KYC_PASSED_STUB` event. The two decisions that need explaining are recorded in [0001](decisions/0001-dedup-vs-idempotency.md) and [0002](decisions/0002-dual-write.md).
 
 ```mermaid
 flowchart TB
