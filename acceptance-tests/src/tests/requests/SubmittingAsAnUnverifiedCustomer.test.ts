@@ -69,15 +69,15 @@ for (const {description, reason, kycStatus, seed} of unverifiedCustomers) {
 
     when("the worker has recorded it", () => {
       beforeEach(async ({ledger}) => {
-        await ledger.records.waitForRecord(idempotencyKey);
+        await ledger.records.waitForRecord({customerId, idempotencyKey});
       });
 
       then("the request is recorded", async ({ledger}) => {
-        expect(await ledger.records.isRecorded(idempotencyKey)).toBe(true);
+        expect(await ledger.records.isRecorded({customerId, idempotencyKey})).toBe(true);
       });
 
       then(`it is recorded as rejected, because ${reason}, on the KYC status it relied on`, async ({ledger}) => {
-        const recorded = await ledger.records.getRecordedRequestFor(idempotencyKey);
+        const recorded = await ledger.records.getRecordedRequestFor({customerId, idempotencyKey});
         expect({outcome: recorded?.outcome, reason: recorded?.reason, kycStatus: recorded?.kycStatus}).toEqual({
           outcome: "rejected",
           reason,

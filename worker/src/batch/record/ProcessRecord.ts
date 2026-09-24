@@ -22,8 +22,8 @@ export async function processRecord(
     const now = dependencies.now();
     const decision = evaluateKyc({status, now});
 
-    // Recorded first, and announced from what is on file rather than from `decision`: a repeat of the key
-    // replays the original decision even if the customer's KYC has changed since (docs/decisions/0003-kyc-gating.md).
+    // Recorded first, and announced from what is on file rather than from `decision`: a repeat of this customer's
+    // key replays the original decision even if the customer's KYC has changed since (docs/decisions/0003-kyc-gating.md).
     // It is announced on a repeat too, because if a previous attempt recorded it but failed to publish, the
     // redelivery is the only chance to emit (docs/decisions/0002-dual-write.md).
     const onFile = await dependencies.recordRequest({

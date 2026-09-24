@@ -16,7 +16,7 @@ So two mechanisms could be mistaken for one. The double-spend guarantee has to c
 
 ## Decision
 
-The guarantee is the DynamoDB conditional write, `PutItem` with `attribute_not_exists(idempotencyKey)`, keyed on the `Idempotency-Key` header. SQS deduplication stays on as a cheap first filter for byte-identical retries, and nothing relies on it.
+The guarantee is the DynamoDB conditional write, `PutItem` with `attribute_not_exists(idempotencyKey)`, keyed on the `Idempotency-Key` header, scoped to the customer who sent it ([0004](0004-customer-scoped-idempotency.md)). SQS deduplication stays on as a cheap first filter for byte-identical retries, and nothing relies on it.
 
 The header travels as the `IdempotencyKey` SQS message attribute, never inside the body, so the body remains an exact passthrough of the client's request.
 

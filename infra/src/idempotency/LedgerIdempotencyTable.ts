@@ -9,7 +9,9 @@ export class LedgerIdempotencyTable extends Construct {
     super(scope, id);
 
     this.table = new Table(this, "Table", {
-      partitionKey: {name: "idempotencyKey", type: AttributeType.STRING},
+      // A key is only unique per customer (docs/decisions/0004-customer-scoped-idempotency.md).
+      partitionKey: {name: "customerId", type: AttributeType.STRING},
+      sortKey: {name: "idempotencyKey", type: AttributeType.STRING},
       billingMode: BillingMode.PAY_PER_REQUEST,
       removalPolicy: RemovalPolicy.DESTROY,
     });

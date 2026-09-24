@@ -60,6 +60,8 @@ batch must also be reported as failed, not just the one that errored.
     lookup, write or publish) fails the message so it is retried.
   - Announce from the record **on file**, not from the decision just made: a repeat of a key replays the
     original decision, even for a customer whose KYC has changed since.
+  - The key is **per customer** (`docs/decisions/0004-customer-scoped-idempotency.md`): the table is keyed on
+    the customer and the key, so another customer's request under the same string is decided on its own.
   - The KYC table is read-only to this Lambda (`infra` grants `GetItem` only). Do not add a write to it.
 
 ## Reading the key and the customer

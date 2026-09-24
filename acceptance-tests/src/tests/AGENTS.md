@@ -25,11 +25,11 @@ given("a verified customer submits a fractionalization request", () => {
 
   when("the worker has processed it", () => {
     beforeEach(async ({ledger}) => {
-      await ledger.records.waitForRecord("k1");
+      await ledger.records.waitForRecord({customerId: "c1", idempotencyKey: "k1"});
     });
 
     then("the request is recorded", async ({ledger}) => {
-      expect(await ledger.records.isRecorded("k1")).toBe(true);
+      expect(await ledger.records.isRecorded({customerId: "c1", idempotencyKey: "k1"})).toBe(true);
     });
   });
 });

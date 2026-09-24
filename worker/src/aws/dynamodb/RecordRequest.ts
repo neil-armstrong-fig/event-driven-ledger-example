@@ -21,7 +21,8 @@ type Item = Record<string, AttributeValue>;
 /** Resolves to what is now on file for the key: `request` if it was new, otherwise the original, untouched. */
 export async function recordRequest({client, tableName, request}: RecordRequestOptions): Promise<RequestRecord> {
   try {
-    // The idempotency guard itself (docs/decisions/0001-dedup-vs-idempotency.md).
+    // The idempotency guard itself (docs/decisions/0001-dedup-vs-idempotency.md). The table is keyed on the customer
+    // and their key, so "does not exist" means this customer has not used this key (docs/decisions/0004-customer-scoped-idempotency.md).
     await client.send(
       new PutItemCommand({
         TableName: tableName,

@@ -40,15 +40,15 @@ given("a verified customer submits a valid fractionalization request", () => {
 
   when("the worker has recorded it", () => {
     beforeEach(async ({ledger}) => {
-      await ledger.records.waitForRecord(idempotencyKey);
+      await ledger.records.waitForRecord({customerId, idempotencyKey});
     });
 
     then("the request is recorded", async ({ledger}) => {
-      expect(await ledger.records.isRecorded(idempotencyKey)).toBe(true);
+      expect(await ledger.records.isRecorded({customerId, idempotencyKey})).toBe(true);
     });
 
     then("it is recorded as passed, on the verified KYC it relied on", async ({ledger}) => {
-      expect(await ledger.records.getRecordedRequestFor(idempotencyKey)).toMatchObject({
+      expect(await ledger.records.getRecordedRequestFor({customerId, idempotencyKey})).toMatchObject({
         customerId,
         assetId,
         outcome: "passed",
@@ -57,7 +57,7 @@ given("a verified customer submits a valid fractionalization request", () => {
     });
 
     then("the decision is stamped with the time it was made", async ({ledger}) => {
-      const recorded = await ledger.records.getRecordedRequestFor(idempotencyKey);
+      const recorded = await ledger.records.getRecordedRequestFor({customerId, idempotencyKey});
       expect(Math.abs(Date.now() - Date.parse(recorded?.decidedAt ?? ""))).toBeLessThan(CLOCK_TOLERANCE_MS);
     });
   });

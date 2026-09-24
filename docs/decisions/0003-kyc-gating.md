@@ -25,13 +25,12 @@ KYC belongs to the customer, not to the request. It is done once at onboarding, 
 | `pending` | rejected, reason `pending` |
 | `rejected`, or no record at all | rejected, reason `not-verified` |
 
-**The decision is recorded with the idempotency key.** The idempotency item keeps the customer, the asset, the outcome, the reason, the KYC status relied on and when it was decided. A repeat of the same key **replays the recorded decision and never re-evaluates it**: a customer who becomes verified afterwards cannot turn an earlier rejection into a pass, and an audit can show exactly what was known when the request was decided. The worker learns the original decision from the conditional write itself (`ReturnValuesOnConditionCheckFailure: ALL_OLD`).
+**The decision is recorded with the idempotency key.** The idempotency item keeps the customer, the asset, the outcome, the reason, the KYC status relied on and when it was decided. A repeat of the same key **replays the recorded decision and never re-evaluates it**: a customer who becomes verified afterwards cannot turn an earlier rejection into a pass, and an audit can show exactly what was known when the request was decided. The worker learns the original decision from the conditional write itself (`ReturnValuesOnConditionCheckFailure: ALL_OLD`). The key is scoped to the customer ([0004](0004-customer-scoped-idempotency.md)), so "a repeat of the same key" means the same customer repeating it.
 
 **Events are `KYC_PASSED` and `KYC_REJECTED`.** The `_STUB` suffix goes because the check is real. Both carry `assetId`, `idempotencyKey` and `customerId`; `KYC_REJECTED` also carries the reason. As in [0002](0002-dual-write.md) the event is emitted on a duplicate as well, but it now carries the **recorded** decision.
 
 ## Named gaps (decided, not built)
 
-- **The idempotency key is global, not per customer.** If customer B sends a key customer A already used, B is handed A's recorded decision. Scoping the key to the customer (a composite key, or a stored `customerId` compared on replay) is the fix, and it changes the key semantics of [0001](0001-dedup-vs-idempotency.md), so it is left for its own decision.
 - **The status feed is seeded, not event-driven.** Acceptance tests write statuses straight into the table. A real KYC provider would call back, become a `KYC_STATUS_CHANGED` event, and a rule would update the table. That path is documented and unbuilt, like the outbox.
 - **`pending` is rejected, not parked.** A request from a customer whose verification is still in flight is rejected with reason `pending`; the client must resubmit under a new key once verified. Holding it until the provider answers would need a state machine this skeleton does not have.
 

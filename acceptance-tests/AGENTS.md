@@ -67,6 +67,9 @@ before it submits — standing in for the provider's feed (`docs/decisions/0003-
 4. **Replay of a rejection**: rejected while pending, the customer is then verified, the same key again →
    still announced as rejected, never passed. A repeat replays the decision on record.
 5. **Anonymous**: a request with no `Customer-Id` gets a 400 from the API itself, before it is queued.
+6. **Two customers, one key**: a verified customer's request is announced as passed, then a pending customer sends
+   the same `Idempotency-Key` → theirs is decided on their own KYC, recorded and announced as rejected for them, and
+   the key is still announced as passed only for the first (`docs/decisions/0004-customer-scoped-idempotency.md`).
 
 ## Read back what was written, not only that something was
 

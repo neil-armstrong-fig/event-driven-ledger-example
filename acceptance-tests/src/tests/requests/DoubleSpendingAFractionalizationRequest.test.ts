@@ -36,11 +36,11 @@ given("a verified customer submits two requests that share an idempotency key", 
 
   when("the worker has recorded them", () => {
     beforeEach(async ({ledger}) => {
-      await ledger.records.waitForRecord(idempotencyKey);
+      await ledger.records.waitForRecord({customerId, idempotencyKey});
     });
 
     then("the request is recorded", async ({ledger}) => {
-      expect(await ledger.records.isRecorded(idempotencyKey)).toBe(true);
+      expect(await ledger.records.isRecorded({customerId, idempotencyKey})).toBe(true);
     });
   });
 

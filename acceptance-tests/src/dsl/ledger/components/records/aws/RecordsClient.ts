@@ -3,6 +3,7 @@ import type {KycOutcome} from "@ledger/shared/kyc/KycOutcome";
 import type {KycRejectionReason} from "@ledger/shared/kyc/KycRejectionReason";
 import type {KycStatus} from "@ledger/shared/kyc/KycStatus";
 import type {RecordedRequest} from "@src/dsl/ledger/components/records/types/RecordedRequest";
+import type {RecordKey} from "@src/dsl/ledger/components/records/types/RecordKey";
 import {eventually} from "@src/dsl/shared/polling/Eventually";
 import type {LedgerEndpoints} from "@src/dsl/ledger/types/LedgerEndpoints";
 
@@ -18,24 +19,24 @@ export class RecordsClient {
     this.tableName = tableName;
   }
 
-  /** The table is keyed on `idempotencyKey` alone, so there is at most one record per key. */
-  async isRecorded(idempotencyKey: string): Promise<boolean> {
+  /** The table is keyed on the customer and their `idempotencyKey`, so there is at most one record per pair. */
+  async isRecorded({customerId, idempotencyKey}: RecordKey): Promise<boolean> {
     const {Item} = await this.dynamoDb.send(
       new GetItemCommand({
         TableName: this.tableName,
-        Key: {idempotencyKey: {S: idempotencyKey}},
+        Key: {customerId: {S: customerId}, idempotencyKey: {S: idempotencyKey}},
         ConsistentRead: true,
       }),
     );
     return Item !== undefined;
   }
 
-  /** The decision on record for this key and what it rested on, or `undefined` when nothing is recorded yet. */
-  async getRecordedRequestFor(idempotencyKey: string): Promise<RecordedRequest | undefined> {
+  /** The decision on record for this customer's key and what it rested on, or `undefined` when nothing is recorded yet. */
+  async getRecordedRequestFor({customerId, idempotencyKey}: RecordKey): Promise<RecordedRequest | undefined> {
     const {Item} = await this.dynamoDb.send(
       new GetItemCommand({
         TableName: this.tableName,
-        Key: {idempotencyKey: {S: idempotencyKey}},
+        Key: {customerId: {S: customerId}, idempotencyKey: {S: idempotencyKey}},
         ConsistentRead: true,
       }),
     );
@@ -46,9 +47,9 @@ export class RecordsClient {
   }
 
   /** Polls rather than sleeping — see `eventually`. Rejects if the record never appears. */
-  async waitForRecord(idempotencyKey: string): Promise<void> {
+  async waitForRecord(key: RecordKey): Promise<void> {
     await eventually(async () => {
-      if (await this.isRecorded(idempotencyKey)) {
+      if (await this.isRecorded(key)) {
         return true;
       }
       return undefined;

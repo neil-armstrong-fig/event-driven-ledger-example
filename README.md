@@ -32,7 +32,7 @@ Here the check is real but the provider is not. The worker looks the customer up
 ## What it demonstrates
 
 - **No Lambda in the hot path.** API Gateway validates the request against a JSON Schema and writes straight to a FIFO queue, answering `202 Accepted`.
-- **Idempotency you can prove.** The worker records each `Idempotency-Key` with a DynamoDB `PutItem` guarded by `attribute_not_exists`, so a replayed request cannot double-spend.
+- **Idempotency you can prove.** The worker records each customer's `Idempotency-Key` with a DynamoDB `PutItem` guarded by `attribute_not_exists`, so a replayed request cannot double-spend, and one customer's key never collides with another's ([ADR 0004](docs/decisions/0004-customer-scoped-idempotency.md)).
 - **Identity from the transport, never the body.** Every request must say who it is from, and the worker reads that from a message attribute set at the API, so a client cannot claim to be someone else.
 - **A decision that is recorded and replayed.** The KYC decision is stored with the idempotency key, so a repeat replays what was first decided and an audit can see what was known at the time.
 - **Honest about the gaps.** Well-known traps and shortcuts are named, decided and documented as ADRs rather than hand-waved:

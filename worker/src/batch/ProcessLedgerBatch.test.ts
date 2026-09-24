@@ -48,7 +48,7 @@ describe("a ledger whose customer is verified", () => {
     });
 
     it("records the decision, and the KYC status it rested on", () => {
-      expect(ledger.recorded.get("idem-1")).toEqual({
+      expect(ledger.recorded.get(recordKey("customer-1", "idem-1"))).toEqual({
         idempotencyKey: "idem-1",
         customerId: "customer-1",
         assetId: "asset-1",
@@ -75,7 +75,7 @@ describe("a ledger whose customer is verified", () => {
     });
 
     it("records the key once", () => {
-      expect([...ledger.recorded.keys()]).toEqual(["idem-1"]);
+      expect([...ledger.recorded.keys()]).toEqual([recordKey("customer-1", "idem-1")]);
     });
 
     it("emits for both, delivery being at-least-once (Gap #2)", () => {
@@ -204,7 +204,7 @@ describe("a ledger whose customer has not passed KYC", () => {
     });
 
     it("records the rejection, and the KYC status it rested on", () => {
-      expect(ledger.recorded.get("idem-1")).toEqual({
+      expect(ledger.recorded.get(recordKey("customer-1", "idem-1"))).toEqual({
         idempotencyKey: "idem-1",
         customerId: "customer-1",
         assetId: "asset-1",
@@ -257,7 +257,7 @@ describe("a ledger whose customer has not passed KYC", () => {
     });
 
     it("records no KYC status, since there was none to rest on", () => {
-      expect(ledger.recorded.get("idem-1")?.kycStatus).toBeUndefined();
+      expect(ledger.recorded.get(recordKey("customer-1", "idem-1"))?.kycStatus).toBeUndefined();
     });
   });
 });
@@ -277,7 +277,7 @@ describe("a ledger that has already decided a key", () => {
         kycStatus: "pending",
         decidedAt: YESTERDAY,
       };
-      ledger.recorded.set("idem-1", decided);
+      ledger.recorded.set(recordKey("customer-1", "idem-1"), decided);
       ledger.kycStatuses.set("customer-1", VERIFIED);
       response = await processLedgerBatch(
         [record({messageId: "m1", idempotencyKey: "idem-1", assetId: "asset-1"})],
@@ -290,7 +290,7 @@ describe("a ledger that has already decided a key", () => {
     });
 
     it("leaves the record on file as it was", () => {
-      expect(ledger.recorded.get("idem-1")?.decidedAt).toBe(YESTERDAY);
+      expect(ledger.recorded.get(recordKey("customer-1", "idem-1"))?.decidedAt).toBe(YESTERDAY);
     });
 
     it("reports no failures", () => {
@@ -300,7 +300,7 @@ describe("a ledger that has already decided a key", () => {
 
   describe("as a pass, for a customer whose KYC has since been revoked", () => {
     beforeEach(async () => {
-      ledger.recorded.set("idem-1", {
+      ledger.recorded.set(recordKey("customer-1", "idem-1"), {
         idempotencyKey: "idem-1",
         customerId: "customer-1",
         assetId: "asset-1",
@@ -315,6 +315,36 @@ describe("a ledger that has already decided a key", () => {
     it("still emits KYC_PASSED when the key arrives again (Gap #2, at-least-once)", () => {
       expect(ledger.published).toEqual([passed({assetId: "asset-1", idempotencyKey: "idem-1"})]);
     });
+  });
+});
+
+describe("a ledger with two customers who each send the same idempotency key", () => {
+  beforeEach(async () => {
+    ledger = createFakeLedger();
+    ledger.kycStatuses.set("customer-1", VERIFIED);
+    ledger.kycStatuses.set("customer-2", {status: "pending"});
+    response = await processLedgerBatch(
+      [
+        record({messageId: "m1", idempotencyKey: "idem-1", assetId: "asset-1", customerId: "customer-1"}),
+        record({messageId: "m2", idempotencyKey: "idem-1", assetId: "asset-1", customerId: "customer-2"}),
+      ],
+      ledger,
+    );
+  });
+
+  it("decides each on their own KYC and announces each as themselves (0004)", () => {
+    expect(ledger.published).toEqual([
+      passed({assetId: "asset-1", idempotencyKey: "idem-1", customerId: "customer-1"}),
+      rejected({assetId: "asset-1", idempotencyKey: "idem-1", customerId: "customer-2", reason: "pending"}),
+    ]);
+  });
+
+  it("records the key once for each customer", () => {
+    expect(ledger.recorded.size).toBe(2);
+  });
+
+  it("reports no failures", () => {
+    expect(response).toEqual({batchItemFailures: []});
   });
 });
 
@@ -354,21 +384,27 @@ function record({
 interface PassedOptions {
   assetId: string;
   idempotencyKey: string;
+  customerId?: string;
 }
 
-function passed({assetId, idempotencyKey}: PassedOptions): PublishedEvent {
-  return {detailType: KYC_DETAIL_TYPES.passed, detail: {assetId, idempotencyKey, customerId: "customer-1"}};
+function passed({assetId, idempotencyKey, customerId = "customer-1"}: PassedOptions): PublishedEvent {
+  return {detailType: KYC_DETAIL_TYPES.passed, detail: {assetId, idempotencyKey, customerId}};
 }
 
 interface RejectedOptions extends PassedOptions {
   reason: string;
 }
 
-function rejected({assetId, idempotencyKey, reason}: RejectedOptions): PublishedEvent {
+function rejected({assetId, idempotencyKey, customerId = "customer-1", reason}: RejectedOptions): PublishedEvent {
   return {
     detailType: KYC_DETAIL_TYPES.rejected,
-    detail: {assetId, idempotencyKey, customerId: "customer-1", reason},
+    detail: {assetId, idempotencyKey, customerId, reason},
   };
+}
+
+// As in the real table, a key is only unique per customer (docs/decisions/0004-customer-scoped-idempotency.md).
+function recordKey(customerId: string, idempotencyKey: string): string {
+  return `${customerId}/${idempotencyKey}`;
 }
 
 function createFakeLedger(): FakeLedger {
@@ -399,8 +435,9 @@ function createFakeLedger(): FakeLedger {
       if (failRecordFor.has(request.idempotencyKey)) {
         return Promise.reject(new Error("DynamoDB unavailable"));
       }
-      const onFile = recorded.get(request.idempotencyKey) ?? request;
-      recorded.set(request.idempotencyKey, onFile);
+      const key = recordKey(request.customerId, request.idempotencyKey);
+      const onFile = recorded.get(key) ?? request;
+      recorded.set(key, onFile);
       return Promise.resolve(onFile);
     },
     publishKycPassed(detail): Promise<void> {
