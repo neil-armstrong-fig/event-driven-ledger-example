@@ -26,8 +26,14 @@ export async function eventually<T>(poll: () => Promise<T | undefined>, options:
 }
 
 function timeoutError(timeoutMs: number, lastError: unknown): Error {
-  const reason = lastError === undefined ? "it never returned a value" : `the last error was: ${String(lastError)}`;
-  return new Error(`eventually() timed out after ${timeoutMs}ms; ${reason}`);
+  return new Error(`eventually() timed out after ${timeoutMs}ms; ${describeCause(lastError)}`);
+}
+
+function describeCause(lastError: unknown): string {
+  if (lastError === undefined) {
+    return "it never returned a value";
+  }
+  return `the last error was: ${String(lastError)}`;
 }
 
 function delay(ms: number): Promise<void> {

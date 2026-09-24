@@ -1,6 +1,6 @@
 # 0002 — Dual write: emit the event on a duplicate too (at-least-once)
 
-Status: accepted
+Status: accepted, amended in part by [0003](0003-kyc-gating.md): the event emitted on a duplicate now carries the decision that was originally recorded, not a fresh one.
 
 ## Context
 
@@ -13,7 +13,7 @@ For each request the worker does two writes that cannot be made atomic: a condit
 
 ## Decision
 
-Option A. The worker records the key, and whether it was newly recorded or already there, publishes `KYC_PASSED_STUB`. Any failure in either step fails that message, and every later message in its FIFO group (see the FIFO rule in `worker/src/batch/ProcessLedgerBatch.ts`).
+Option A. The worker records the key, and whether it was newly recorded or already there, publishes the decision on file (`KYC_PASSED` or `KYC_REJECTED`, see [0003](0003-kyc-gating.md)). Any failure in either step fails that message, and every later message in its FIFO group (see the FIFO rule in `worker/src/batch/ProcessLedgerBatch.ts`).
 
 Option B stays on the diagram as a dotted, unbuilt evolution path.
 
@@ -27,5 +27,5 @@ Option B stays on the diagram as a dotted, unbuilt evolution path.
 ## Where this shows up in code
 
 - `worker/src/batch/record/ProcessRecord.ts` — emits regardless of the outcome.
-- `worker/src/aws/dynamodb/RecordRequest.ts` — maps the condition failure to `"already-recorded"`.
-- `worker/src/aws/eventbridge/PublishKycPassed.ts` — the `FailedEntryCount` check.
+- `worker/src/aws/dynamodb/RecordRequest.ts` — on the condition failure, returns the original record the failed condition hands back.
+- `worker/src/aws/eventbridge/PublishEvent.ts` — the `FailedEntryCount` check, shared by both events.

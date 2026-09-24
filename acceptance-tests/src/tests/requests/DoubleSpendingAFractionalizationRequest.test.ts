@@ -13,15 +13,18 @@ const assetId = "asset-1";
 // Same key, fresh `requestId`: a byte-identical body would be dropped by SQS FIFO content-based
 // deduplication before the worker ever sees it, so it would prove nothing about the DynamoDB guard
 // (docs/decisions/0001-dedup-vs-idempotency.md). Fresh for every criterion, as in the happy-path spec.
+let customerId: string;
 let idempotencyKey: string;
 let statuses: number[];
 
-given("a client submits two requests that share an idempotency key", () => {
+given("a verified customer submits two requests that share an idempotency key", () => {
   beforeEach(async ({ledger}) => {
+    customerId = `customer-${randomUUID()}`;
     idempotencyKey = `double-spend-${randomUUID()}`;
+    await ledger.kyc.seedCustomer({customerId, status: "verified"});
     statuses = [
-      await ledger.requests.submit({idempotencyKey, assetId, requestId: `request-${randomUUID()}`}),
-      await ledger.requests.submit({idempotencyKey, assetId, requestId: `request-${randomUUID()}`}),
+      await ledger.requests.submit({idempotencyKey, customerId, assetId, requestId: `request-${randomUUID()}`}),
+      await ledger.requests.submit({idempotencyKey, customerId, assetId, requestId: `request-${randomUUID()}`}),
     ];
   });
 
@@ -47,10 +50,12 @@ given("a client submits two requests that share an idempotency key", () => {
       await ledger.events.waitForKycPassedEvents(idempotencyKey, {atLeast: 2});
     });
 
-    then("every announcement carries that key", async ({ledger}) => {
+    then("every announcement carries that key and customer", async ({ledger}) => {
       const events = await ledger.events.getKycPassedEventsFor(idempotencyKey);
       expect(events.length).toBeGreaterThanOrEqual(2);
-      expect(events.every(event => event.idempotencyKey === idempotencyKey)).toBe(true);
+      expect(events.every(event => event.idempotencyKey === idempotencyKey && event.customerId === customerId)).toBe(
+        true,
+      );
     });
   });
 });

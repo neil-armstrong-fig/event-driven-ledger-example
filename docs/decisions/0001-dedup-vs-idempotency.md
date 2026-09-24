@@ -32,4 +32,4 @@ The double-spend acceptance spec therefore sends two requests with the **same** 
 
 - `infra/src/queue/LedgerRequestQueue.ts` — `contentBasedDeduplication`.
 - `worker/src/aws/dynamodb/RecordRequest.ts` — the conditional write.
-- `domain/src/idempotency/ExtractIdempotencyKey.ts` — the key comes from the attribute, never the body.
+- `domain/src/message/ExtractIdempotencyKey.ts` — the key comes from the attribute, never the body.

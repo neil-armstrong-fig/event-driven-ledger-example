@@ -1,5 +1,6 @@
 import {App} from "aws-cdk-lib";
 import {Template} from "aws-cdk-lib/assertions";
+import {KYC_DETAIL_TYPES} from "@ledger/shared/events/KycDetailTypes";
 import {LEDGER_STACK_OUTPUTS} from "@ledger/shared/stack/LedgerStackOutputs";
 
 import {LedgerStack} from "@src/LedgerStack";
@@ -23,7 +24,8 @@ describe("the production stack", () => {
 
   it("does not deploy the acceptance-test event sink, so it never ships in a real deployment", () => {
     template.resourceCountIs("AWS::Events::Rule", 0);
-    template.resourceCountIs("AWS::DynamoDB::Table", 1);
+    // The idempotency table and the KYC status table; the sink would be a third.
+    template.resourceCountIs("AWS::DynamoDB::Table", 2);
     expect(outputNames(template)).not.toContain(LEDGER_STACK_OUTPUTS.sinkTableName);
   });
 });
@@ -35,8 +37,10 @@ describe("the acceptance-test stack", () => {
     expect(normalizeAssetHashes(template.toJSON())).toMatchSnapshot();
   });
 
-  it("delivers KYC_PASSED_STUB events to a sink that stores them", () => {
-    template.hasResourceProperties("AWS::Events::Rule", {EventPattern: {"detail-type": ["KYC_PASSED_STUB"]}});
+  it("delivers both KYC outcomes to a sink that stores them", () => {
+    template.hasResourceProperties("AWS::Events::Rule", {
+      EventPattern: {"detail-type": [KYC_DETAIL_TYPES.passed, KYC_DETAIL_TYPES.rejected]},
+    });
   });
 
   it("keeps every event under its idempotency key, so a duplicate does not overwrite the first", () => {

@@ -55,6 +55,11 @@ exports[`the acceptance-test stack > synthesizes with no unnoticed resource or p
         ],
       },
     },
+    "LedgerKycTableName": {
+      "Value": {
+        "Ref": "KycTableDC0508F4",
+      },
+    },
     "LedgerSinkTableName": {
       "Value": {
         "Ref": "EventSinkTableD2255BE4",
@@ -121,7 +126,7 @@ exports[`the acceptance-test stack > synthesizes with no unnoticed resource or p
       },
       "Type": "AWS::IAM::Policy",
     },
-    "ApiRestApiDeploymentDC05A82D417d496af0580f300c3d61d46143c1e0": {
+    "ApiRestApiDeploymentDC05A82D073f04e0fb62b907542bedcd873d1d7d": {
       "DependsOn": [
         "ApiRestApifractionalizationrequestsPOST9DEF08C4",
         "ApiRestApifractionalizationrequests0B695B3C",
@@ -142,7 +147,7 @@ exports[`the acceptance-test stack > synthesizes with no unnoticed resource or p
     "ApiRestApiDeploymentStageprodE828476C": {
       "Properties": {
         "DeploymentId": {
-          "Ref": "ApiRestApiDeploymentDC05A82D417d496af0580f300c3d61d46143c1e0",
+          "Ref": "ApiRestApiDeploymentDC05A82D073f04e0fb62b907542bedcd873d1d7d",
         },
         "RestApiId": {
           "Ref": "ApiRestApiE35FEAFE",
@@ -243,13 +248,17 @@ exports[`the acceptance-test stack > synthesizes with no unnoticed resource or p
           "RequestTemplates": {
             "application/json": "#set($assetId = $input.path('$.assetId'))
 #set($idempotencyKey = $input.params('Idempotency-Key'))
+#set($customerId = $input.params('Customer-Id'))
 #set($action = "Action=SendMessage")
 #set($messageGroupId = "&MessageGroupId=$util.urlEncode($assetId)")
 #set($messageBody = "&MessageBody=$util.urlEncode($input.body)")
 #set($attributeName = "&MessageAttribute.1.Name=IdempotencyKey")
 #set($attributeType = "&MessageAttribute.1.Value.DataType=String")
 #set($attributeValue = "&MessageAttribute.1.Value.StringValue=$util.urlEncode($idempotencyKey)")
-#set($body = "$action$messageGroupId$messageBody$attributeName$attributeType$attributeValue")
+#set($customerAttributeName = "&MessageAttribute.2.Name=CustomerId")
+#set($customerAttributeType = "&MessageAttribute.2.Value.DataType=String")
+#set($customerAttributeValue = "&MessageAttribute.2.Value.StringValue=$util.urlEncode($customerId)")
+#set($body = "$action$messageGroupId$messageBody$attributeName$attributeType$attributeValue$customerAttributeName$customerAttributeType$customerAttributeValue")
 $body",
           },
           "Type": "AWS",
@@ -294,6 +303,7 @@ $body",
           },
         },
         "RequestParameters": {
+          "method.request.header.Customer-Id": true,
           "method.request.header.Idempotency-Key": true,
         },
         "RequestValidatorId": {
@@ -321,7 +331,8 @@ $body",
         },
         "EventPattern": {
           "detail-type": [
-            "KYC_PASSED_STUB",
+            "KYC_PASSED",
+            "KYC_REJECTED",
           ],
         },
         "State": "ENABLED",
@@ -357,7 +368,7 @@ $body",
               {
                 "Ref": "AWS::Partition",
               },
-              ":states:::dynamodb:putItem","Parameters":{"Item":{"idempotencyKey":{"S.$":"$.detail.idempotencyKey"},"eventId":{"S.$":"$.id"},"assetId":{"S.$":"$.detail.assetId"}},"TableName":"",
+              ":states:::dynamodb:putItem","Parameters":{"Item":{"idempotencyKey":{"S.$":"$.detail.idempotencyKey"},"eventId":{"S.$":"$.id"},"detailType":{"S.$":"$['detail-type']"},"detail":{"S.$":"States.JsonToString($.detail)"}},"TableName":"",
               {
                 "Ref": "EventSinkTableD2255BE4",
               },
@@ -524,6 +535,26 @@ $body",
       "Type": "AWS::DynamoDB::Table",
       "UpdateReplacePolicy": "Delete",
     },
+    "KycTableDC0508F4": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "customerId",
+            "AttributeType": "S",
+          },
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "customerId",
+            "KeyType": "HASH",
+          },
+        ],
+      },
+      "Type": "AWS::DynamoDB::Table",
+      "UpdateReplacePolicy": "Delete",
+    },
     "RequestQueueDeadLetterQueue8059E85F": {
       "DeletionPolicy": "Delete",
       "Properties": {
@@ -566,6 +597,9 @@ $body",
           "Variables": {
             "LEDGER_EVENT_BUS_NAME": {
               "Ref": "EventBusEEC924FB",
+            },
+            "LEDGER_KYC_TABLE_NAME": {
+              "Ref": "KycTableDC0508F4",
             },
             "LEDGER_TABLE_NAME": {
               "Ref": "IdempotencyTableE9369C9C",
@@ -626,6 +660,18 @@ $body",
                 {
                   "Fn::GetAtt": [
                     "IdempotencyTableE9369C9C",
+                    "Arn",
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "dynamodb:GetItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "KycTableDC0508F4",
                     "Arn",
                   ],
                 },
@@ -773,6 +819,11 @@ exports[`the production stack > synthesizes with no unnoticed resource or proper
         ],
       },
     },
+    "LedgerKycTableName": {
+      "Value": {
+        "Ref": "KycTableDC0508F4",
+      },
+    },
     "LedgerTableName": {
       "Value": {
         "Ref": "IdempotencyTableE9369C9C",
@@ -834,7 +885,7 @@ exports[`the production stack > synthesizes with no unnoticed resource or proper
       },
       "Type": "AWS::IAM::Policy",
     },
-    "ApiRestApiDeploymentDC05A82D417d496af0580f300c3d61d46143c1e0": {
+    "ApiRestApiDeploymentDC05A82D073f04e0fb62b907542bedcd873d1d7d": {
       "DependsOn": [
         "ApiRestApifractionalizationrequestsPOST9DEF08C4",
         "ApiRestApifractionalizationrequests0B695B3C",
@@ -855,7 +906,7 @@ exports[`the production stack > synthesizes with no unnoticed resource or proper
     "ApiRestApiDeploymentStageprodE828476C": {
       "Properties": {
         "DeploymentId": {
-          "Ref": "ApiRestApiDeploymentDC05A82D417d496af0580f300c3d61d46143c1e0",
+          "Ref": "ApiRestApiDeploymentDC05A82D073f04e0fb62b907542bedcd873d1d7d",
         },
         "RestApiId": {
           "Ref": "ApiRestApiE35FEAFE",
@@ -956,13 +1007,17 @@ exports[`the production stack > synthesizes with no unnoticed resource or proper
           "RequestTemplates": {
             "application/json": "#set($assetId = $input.path('$.assetId'))
 #set($idempotencyKey = $input.params('Idempotency-Key'))
+#set($customerId = $input.params('Customer-Id'))
 #set($action = "Action=SendMessage")
 #set($messageGroupId = "&MessageGroupId=$util.urlEncode($assetId)")
 #set($messageBody = "&MessageBody=$util.urlEncode($input.body)")
 #set($attributeName = "&MessageAttribute.1.Name=IdempotencyKey")
 #set($attributeType = "&MessageAttribute.1.Value.DataType=String")
 #set($attributeValue = "&MessageAttribute.1.Value.StringValue=$util.urlEncode($idempotencyKey)")
-#set($body = "$action$messageGroupId$messageBody$attributeName$attributeType$attributeValue")
+#set($customerAttributeName = "&MessageAttribute.2.Name=CustomerId")
+#set($customerAttributeType = "&MessageAttribute.2.Value.DataType=String")
+#set($customerAttributeValue = "&MessageAttribute.2.Value.StringValue=$util.urlEncode($customerId)")
+#set($body = "$action$messageGroupId$messageBody$attributeName$attributeType$attributeValue$customerAttributeName$customerAttributeType$customerAttributeValue")
 $body",
           },
           "Type": "AWS",
@@ -1007,6 +1062,7 @@ $body",
           },
         },
         "RequestParameters": {
+          "method.request.header.Customer-Id": true,
           "method.request.header.Idempotency-Key": true,
         },
         "RequestValidatorId": {
@@ -1040,6 +1096,26 @@ $body",
         "KeySchema": [
           {
             "AttributeName": "idempotencyKey",
+            "KeyType": "HASH",
+          },
+        ],
+      },
+      "Type": "AWS::DynamoDB::Table",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "KycTableDC0508F4": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "customerId",
+            "AttributeType": "S",
+          },
+        ],
+        "BillingMode": "PAY_PER_REQUEST",
+        "KeySchema": [
+          {
+            "AttributeName": "customerId",
             "KeyType": "HASH",
           },
         ],
@@ -1089,6 +1165,9 @@ $body",
           "Variables": {
             "LEDGER_EVENT_BUS_NAME": {
               "Ref": "EventBusEEC924FB",
+            },
+            "LEDGER_KYC_TABLE_NAME": {
+              "Ref": "KycTableDC0508F4",
             },
             "LEDGER_TABLE_NAME": {
               "Ref": "IdempotencyTableE9369C9C",
@@ -1149,6 +1228,18 @@ $body",
                 {
                   "Fn::GetAtt": [
                     "IdempotencyTableE9369C9C",
+                    "Arn",
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "dynamodb:GetItem",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "KycTableDC0508F4",
                     "Arn",
                   ],
                 },

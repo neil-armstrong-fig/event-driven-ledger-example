@@ -14,15 +14,15 @@ Also never: create/switch/delete branches, force-push, `git reset --hard`, or an
 
 | Package | Purpose | May import |
 |---|---|---|
-| `shared` | Event schemas, DTOs, JSON Schema for the API GW validator model. Bottom of the dependency graph. | nothing else in the workspace |
-| `domain` | Pure business logic: idempotency-key semantics, `KYC_PASSED_STUB` event payload construction. Zero AWS imports. | `shared` only |
+| `shared` | Event schemas, DTOs, JSON Schema for the API GW validator model, and the vocabulary the acceptance tests share with the code (KYC statuses and reasons). Bottom of the dependency graph. | nothing else in the workspace |
+| `domain` | Pure business logic: idempotency-key and customer-id extraction, the KYC decision rule, KYC event payload construction. Zero AWS imports. | `shared` only |
 | `worker` | The SQS-batch Lambda handler. Wires `domain` logic to real AWS SDK calls. | `domain`, `shared` |
 | `infra` | CDK app, stacks, constructs. Deploys the worker's *built artifact* — never imports its source. CDK-output regression tests live here. | `shared` only |
 | `acceptance-tests` | ATDD DSL + given/when/then specs, run against a deployed LocalStack stack. | `shared`, plus the AWS SDK inside its own `aws/` folders only |
 
 Import boundaries are enforced by ESLint `no-restricted-imports`, deny-by-default (a new workspace package is denied until explicitly added to `allowedPackages`). This is not a convention to remember and follow by hand — it's a lint failure if violated, so trust `pnpm checks` over memory.
 
-`docs/` holds only research or decisions that would otherwise need to be re-derived — see `docs/architecture.md` for the project's full context and `docs/decisions/` for the two named architectural gaps (dedup-vs-idempotency, dual-write). Link code back to the doc section it implements(e.g. a comment naming the `docs/` section a rule comes from).
+`docs/` holds only research or decisions that would otherwise need to be re-derived — see `docs/architecture.md` for the project's full context and `docs/decisions/` for the three ADRs (dedup-vs-idempotency, dual-write, KYC gating). Link code back to the doc section it implements(e.g. a comment naming the `docs/` section a rule comes from).
 
 ## Before changing code
 
@@ -36,7 +36,7 @@ Import boundaries are enforced by ESLint `no-restricted-imports`, deny-by-defaul
 
 - **Acceptance-test-first**: for any user-observable behaviour, write the given/when/then spec before the implementation, watch it fail for the *right* reason (not a typo, not a missing import — the actual behaviour under test), then make it pass.
 - **Unit-test-first** for pure logic in `domain`: red, then green, then move on. Don't write the implementation first and backfill tests.
-- **A passing test proves nothing until you've watched it fail.** For any test you didn't just write red-then-green yourself (inherited, retrofitted, or written by another agent), deliberately break the code it covers, run it, confirm it fails for the right reason, then restore. This is a required verification step, not an optional audit.
+- **A passing test proves nothing until you've watched it fail.** For any test you didn't just write red-then-green yourself (inherited, retrofitted, or written by another agent), deliberately break the code it covers, run it, confirm it fails for the right reason, then restore. This is a required verification step, not an optional audit. Confirm the mutation actually applied (`cmp` or `grep` the file — Prettier can reflow one away and give a false green), and note *which* tests fell: the wrong ones, or too many, means the cover is in the wrong place. Cover what was **written**, not only that something was: mutating a stored field (the KYC status, the timestamp) slipped past every acceptance spec until one read it back.
 - **CDK output is tested too**, not just application code — see "How it is tested" in `docs/architecture.md`. A CDK snapshot test with an unnormalised Lambda asset hash trains people to blindly run `-u`; normalise asset hashes/`S3Key`s out of the serialiser so snapshot diffs stay meaningful.
 
 ## Unit test convention
@@ -49,11 +49,15 @@ Reach for nested `describe`s when the subject has states that build on each othe
 
 ## Code style (beyond what Prettier/ESLint enforce automatically)
 
-- One export per file, named for its export, PascalCase for the file.
+- One concept per file, PascalCase and named for it. A const list and the type read off it are one concept and share a file (`KYC_STATUSES` and `KycStatus`); nothing else does.
+- A union of literals is a list plus a derived type: declare it `as const` and read the type off it (`(typeof X)[number]`), so the two cannot drift. A union with no runtime list to keep it honest stays a plain `type`.
 - Declare functions below their callers — top-down reading order.
+- No ternaries unless an expression is genuinely required. Use an `if` that returns early — the short circuit — and let the fall-through be the other case; if that needs a value, extract a small function. Not lint-enforced, so check your own diff for `?` … `:`.
 - Extract pure logic into `domain` when it's cheaply testable there; otherwise keep it inline rather than creating a premature abstraction.
-- A file lives as close to its caller as possible, rising only to the nearest common ancestor.
-- Name folders for subject, not shape (`idempotency/`, not `helpers/` or `utils/`).
+- A file lives as close to its caller as it can, in a subdirectory of it: a helper or type used by one file goes in a folder beneath it, never beside it. Something shared rises to its callers' nearest common ancestor and no further.
+- A folder's root is its table of contents: the entry points sit at the top and everything else drops into a subfolder. About six files is where a folder starts reading as a bucket — a smell, not a hard limit.
+- Name folders for subject, not shape (`idempotency/`, not `helpers/` or `utils/`). The one shape name in use is `types/`, for a folder's plain shapes (`worker/src/batch/types/`, `domain/src/kyc/types/`).
+- Words the acceptance specs and the code must agree on (statuses, reasons, event names) are vocabulary and live in `shared`; the rules that use them stay in `domain`. A spec that spelled a status differently from the code would compile, run and quietly never match.
 - Every type gets a name — no inline object/union types except a function's own narrow parameter-object type.
 - `interface` for object shapes, not `type` — `type` is for unions/primitive aliases/anything `interface` can't express. Enforced by ESLint (`@typescript-eslint/consistent-type-definitions`).
 - Max 3 positional parameters, otherwise a named options object.
@@ -84,6 +88,8 @@ Reach for nested `describe`s when the subject has states that build on each othe
 
 - `typescript` is pinned to exactly `6.0.3` in every package — TS7's new native compiler breaks `ts-node`'s programmatic API.
 - `Idempotency-Key` travels as a native **SQS message attribute**, never spliced into the JSON message body via VTL string concatenation — that approach was tried and fails with a VTL parse error.
+- `CustomerId` travels the same way, from the `Customer-Id` header — the one seam a real authoriser replaces (`docs/decisions/0003-kyc-gating.md`). Never read a customer from the body.
+- A failed `attribute_not_exists` put hands back the original item when asked (`ReturnValuesOnConditionCheckFailure: "ALL_OLD"`, then `error.Item`) — proven on LocalStack, so no second read is needed.
 - DynamoDB's idempotency table needs `removalPolicy: RemovalPolicy.DESTROY` set explicitly — CDK's default is `RETAIN`, which is correct for production but breaks fresh redeploys of this ephemeral demo stack.
 - Lambda runtime: use `nodejs22.x` or newer — `nodejs20.x` is already flagged deprecated.
 - `esbuild` must be a devDependency wherever `NodejsFunction` is used, so CDK synth bundles without needing Docker (LocalStack's own Lambda *execution* still needs the Docker socket mounted — that's a separate, required thing).

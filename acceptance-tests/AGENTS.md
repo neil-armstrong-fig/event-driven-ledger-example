@@ -35,11 +35,11 @@ src/
     errors/DslError.ts
     shared/polling/Eventually.ts helpers more than one *Client needs
     ledger/
-      LedgerDsl.ts               the root; members requests, records, events
+      LedgerDsl.ts               the root; members requests, kyc, records, events
       types/                     LedgerEndpoints — where the deployed stack's pieces live
       aws/                       the root's counterpart: reads them from the stack's CloudFormation outputs
                                  (its helpers in stack-outputs/)
-      components/{requests,records,events}/   each a *Dsl + aws/*Client.ts (+ types/ for its plain shapes)
+      components/{requests,kyc,records,events}/   each a *Dsl + aws/*Client.ts (+ types/ for its plain shapes)
   tests/                         the specs, by subject (none yet)
 ```
 
@@ -49,20 +49,38 @@ src/
 `*Client`, not a hardcoded delay — a fixed sleep is either too slow (every run) or too fast (flaky under
 load) and says nothing about why it failed.
 
-## The two scenarios
+## The scenarios
 
-1. **Happy path**: submit → 202 → wait → the key is recorded → exactly one event emitted.
-2. **Double-spend**: two requests with the **same `Idempotency-Key`** but a **different `requestId`**
+Every request comes from a customer (`Customer-Id`), and the ledger decides against that customer's KYC
+status. **The KYC table has no writer in the stack**, so a spec seeds it with `ledger.kyc.seedCustomer`
+before it submits — standing in for the provider's feed (`docs/decisions/0003-kyc-gating.md`).
+
+1. **Happy path**, a verified customer: submit → 202 → the request is recorded as passed, on the verified
+   KYC it relied on and stamped with a recent time → exactly one `KYC_PASSED` for that customer and asset.
+2. **A customer who has not passed KYC** (pending, rejected, expired, nothing on record): still 202, since
+   the API queues without looking → recorded as rejected, with the reason and the status it relied on → one
+   `KYC_REJECTED` carrying the reason, and never a `KYC_PASSED`.
+3. **Double-spend**: two requests with the **same `Idempotency-Key`** but a **different `requestId`**
    (so SQS content-based dedup lets both through) → the key is recorded (the table key keeps it to one record), and every emitted
-   event carries that same key — not "exactly one event" (Gap #2, Option A: at-least-once). Explained in
-   `docs/decisions/0001-dedup-vs-idempotency.md` / `0002-dual-write.md`.
+   event carries that same key and customer — not "exactly one event" (Gap #2, Option A: at-least-once).
+   Explained in `docs/decisions/0001-dedup-vs-idempotency.md` / `0002-dual-write.md`.
+4. **Replay of a rejection**: rejected while pending, the customer is then verified, the same key again →
+   still announced as rejected, never passed. A repeat replays the decision on record.
+5. **Anonymous**: a request with no `Customer-Id` gets a 400 from the API itself, before it is queued.
+
+## Read back what was written, not only that something was
+
+A spec that only asks "is it recorded?" lets a wrong _value_ through. Mutation testing showed it: the KYC
+status the decision relied on, and its timestamp, could be dropped or corrupted without failing one spec,
+until a spec read the record back (`ledger.records.getRecordedRequestFor`). When the system writes
+something a later decision depends on, assert on what it wrote.
 
 ## EventBridge assertion needs its own sink
 
 There's no way to query "was this event emitted", so an EventBridge rule (`detail-type:
-["KYC_PASSED_STUB"]`) stores every event in a DynamoDB table — via a one-state Step Functions state
+["KYC_PASSED", "KYC_REJECTED"]`) stores every event in a DynamoDB table — via a one-state Step Functions state
 machine, so there is no handler code — keyed by `idempotencyKey` then the event's own id (two events for
-one key are both kept). Reading it consumes nothing and asks about one key only, so **specs can run in
+one key are both kept). Each item holds the `detailType` and the whole `detail` as JSON, which `EventsClient` parses. Reading it consumes nothing and asks about one key only, so **specs can run in
 parallel without seeing each other's events**; that is why the sink is a table and not the queue it
 started as (a shared queue is consumed by whoever reads it, and its orphaned events crowd out real ones).
 **This sink must be deployed only behind a CDK context flag**,
@@ -98,6 +116,10 @@ redeploy onto a running stack breaks the API Gateway Stage and every request 404
 nothing to do with a spec. Redeploy after any `infra` or `worker` change; the specs test the deployed
 artifact, not your working tree.
 
+**On WSL without Docker integration**, call the Windows CLI (`/mnt/c/Program Files/Docker/Docker/resources/bin/docker.exe`)
+and `export WSLENV=LOCALSTACK_AUTH_TOKEN` first, or the container never sees the token. The
+`-v /var/run/docker.sock:…` mount still works, because Docker Desktop resolves it inside its own VM.
+
 The stack is named by `LEDGER_STACK_NAME` (default `LedgerStack`). The SDK clients read the endpoint and
 credentials from `AWS_ENDPOINT_URL`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`;
 `vitest.acceptance.config.ts` defaults them to LocalStack and dummy credentials, so nothing needs
@@ -110,6 +132,6 @@ deploy:aws`; deploying to a real account is your call, agents ask first). CI alw
 Unlike a browser page, **the deployed stack is shared and outlives a run.** A reused idempotency key finds
 last run's record; a reused message body is dropped by SQS FIFO content-based deduplication for five
 minutes (`docs/decisions/0001-dedup-vs-idempotency.md`) — the API still answers 202, no record and no event ever appear, and the
-failure looks like a broken worker. Generate the key and `requestId` in the `given`'s `beforeEach` (each
+failure looks like a broken worker. Generate the key, the `requestId` and the `customerId` in the `given`'s `beforeEach` (each
 `then` re-runs it), not at module level. Give each `when` one thing to wait for, so a criterion fails for
 its own reason and not because a sibling's wait timed out.

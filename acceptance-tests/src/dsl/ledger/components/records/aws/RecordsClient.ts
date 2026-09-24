@@ -1,4 +1,8 @@
-import {DynamoDBClient, GetItemCommand} from "@aws-sdk/client-dynamodb";
+import {DynamoDBClient, GetItemCommand, type AttributeValue} from "@aws-sdk/client-dynamodb";
+import type {KycOutcome} from "@ledger/shared/kyc/KycOutcome";
+import type {KycRejectionReason} from "@ledger/shared/kyc/KycRejectionReason";
+import type {KycStatus} from "@ledger/shared/kyc/KycStatus";
+import type {RecordedRequest} from "@src/dsl/ledger/components/records/types/RecordedRequest";
 import {eventually} from "@src/dsl/shared/polling/Eventually";
 import type {LedgerEndpoints} from "@src/dsl/ledger/types/LedgerEndpoints";
 
@@ -26,8 +30,39 @@ export class RecordsClient {
     return Item !== undefined;
   }
 
+  /** The decision on record for this key and what it rested on, or `undefined` when nothing is recorded yet. */
+  async getRecordedRequestFor(idempotencyKey: string): Promise<RecordedRequest | undefined> {
+    const {Item} = await this.dynamoDb.send(
+      new GetItemCommand({
+        TableName: this.tableName,
+        Key: {idempotencyKey: {S: idempotencyKey}},
+        ConsistentRead: true,
+      }),
+    );
+    if (Item === undefined) {
+      return undefined;
+    }
+    return toRecordedRequest(Item);
+  }
+
   /** Polls rather than sleeping — see `eventually`. Rejects if the record never appears. */
   async waitForRecord(idempotencyKey: string): Promise<void> {
-    await eventually(async () => ((await this.isRecorded(idempotencyKey)) ? true : undefined), RECORDED_WITHIN);
+    await eventually(async () => {
+      if (await this.isRecorded(idempotencyKey)) {
+        return true;
+      }
+      return undefined;
+    }, RECORDED_WITHIN);
   }
+}
+
+function toRecordedRequest(item: Record<string, AttributeValue>): RecordedRequest {
+  return {
+    customerId: item["customerId"]?.S ?? "",
+    assetId: item["assetId"]?.S ?? "",
+    outcome: item["outcome"]?.S as KycOutcome,
+    reason: item["reason"]?.S as KycRejectionReason | undefined,
+    kycStatus: item["kycStatus"]?.S as KycStatus | undefined,
+    decidedAt: item["decidedAt"]?.S ?? "",
+  };
 }

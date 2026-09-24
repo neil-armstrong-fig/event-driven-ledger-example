@@ -67,7 +67,8 @@ export class LedgerApi extends Construct {
     requestsResource.addMethod("POST", integration, {
       requestValidator: validator,
       requestModels: {"application/json": model},
-      requestParameters: {"method.request.header.Idempotency-Key": true},
+      // Customer-Id stands in for what an authoriser would supply (docs/decisions/0003-kyc-gating.md).
+      requestParameters: {"method.request.header.Idempotency-Key": true, "method.request.header.Customer-Id": true},
       methodResponses: [{statusCode: "202"}, {statusCode: "500"}],
     });
   }

@@ -16,7 +16,22 @@ for subject (`events/`), per convention.
 `src/stack/LedgerStackOutputs.ts` (`LEDGER_STACK_OUTPUTS`, the CloudFormation output names) and
 `src/api/FractionalizationRequestsPath.ts` are the contract between `infra` (which provides them) and
 `acceptance-tests` (which reads them). `infra`'s tests assert the acceptance-test stack provides every
-output and serves that path, so drift fails `pnpm checks` rather than an acceptance run.
+output and serves that path, so drift fails `pnpm checks` rather than an acceptance run. `src/events/KycDetailTypes.ts`
+(`KYC_DETAIL_TYPES`) is the same kind of contract between `worker`, which publishes the two KYC events, and
+`infra`'s sink rule, which matches them — neither may import the other.
+
+## Vocabulary, not rules
+
+`src/kyc/` (`KycStatus`, `KycRejectionReason`, `KycOutcome`) is the words the KYC gate is described in
+(`docs/decisions/0003-kyc-gating.md`). They are here, and not in `domain`, because **the acceptance
+tests need the same words**: `acceptance-tests` may import only `shared`, and a spec that asserted
+`"expired"` against a hand-typed copy would compile, run and quietly never match if the two drifted.
+
+Each is a list `as const` with the type read off it, in one file — the list is the source, so the two
+cannot drift. Reach for `shared` where a word is a contract between packages, not wherever code happens
+to repeat. What decides _which_ reason a customer gets is a rule, and rules belong in `domain`, which the
+acceptance tests cannot reach: a spec that recomputed its expected outcome from the code under test would
+agree with it whatever either did.
 
 ## Import boundary
 

@@ -11,6 +11,7 @@ interface LedgerBatchEvent {
 // Built once per Lambda container so the SDK clients (and their connections) are reused across invocations.
 const dependencies = createLedgerDependencies({
   tableName: requireEnv("LEDGER_TABLE_NAME"),
+  kycTableName: requireEnv("LEDGER_KYC_TABLE_NAME"),
   eventBusName: requireEnv("LEDGER_EVENT_BUS_NAME"),
 });
 

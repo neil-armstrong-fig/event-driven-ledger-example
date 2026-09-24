@@ -8,5 +8,6 @@
 export const LEDGER_STACK_OUTPUTS = {
   apiUrl: "LedgerApiUrl",
   tableName: "LedgerTableName",
+  kycTableName: "LedgerKycTableName",
   sinkTableName: "LedgerSinkTableName",
 } as const;

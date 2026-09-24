@@ -30,13 +30,17 @@ export function restrictedImports({allowedPackages = [], paths = [], patterns = 
 
   const workspaceBoundary = {
     group: [`${workspaceScope}/*`, ...permitted],
-    message:
-      allowedPackages.length > 0
-        ? `This package may only import ${allowedPackages.join(", ")} from the workspace.`
-        : "This package may not import other workspace packages.",
+    message: boundaryMessage(allowedPackages),
   };
 
   return ["error", {paths, patterns: [noParentImports, workspaceBoundary, ...patterns]}];
+}
+
+function boundaryMessage(allowedPackages) {
+  if (allowedPackages.length > 0) {
+    return `This package may only import ${allowedPackages.join(", ")} from the workspace.`;
+  }
+  return "This package may not import other workspace packages.";
 }
 
 /**

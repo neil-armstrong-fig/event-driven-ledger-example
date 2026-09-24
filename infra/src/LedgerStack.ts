@@ -6,12 +6,14 @@ import {LedgerApi} from "@src/api/LedgerApi";
 import {LedgerEventBus} from "@src/events/LedgerEventBus";
 import {LedgerEventSink} from "@src/events/LedgerEventSink";
 import {LedgerIdempotencyTable} from "@src/idempotency/LedgerIdempotencyTable";
+import {LedgerKycTable} from "@src/kyc/LedgerKycTable";
 import {LedgerRequestQueue} from "@src/queue/LedgerRequestQueue";
 import {LedgerWorker} from "@src/worker/LedgerWorker";
 
 export class LedgerStack extends Stack {
   public readonly requestQueue: LedgerRequestQueue;
   public readonly idempotencyTable: LedgerIdempotencyTable;
+  public readonly kycTable: LedgerKycTable;
   public readonly eventBus: LedgerEventBus;
   public readonly api: LedgerApi;
   public readonly worker: LedgerWorker;
@@ -23,11 +25,13 @@ export class LedgerStack extends Stack {
 
     this.requestQueue = new LedgerRequestQueue(this, "RequestQueue");
     this.idempotencyTable = new LedgerIdempotencyTable(this, "IdempotencyTable");
+    this.kycTable = new LedgerKycTable(this, "KycTable");
     this.eventBus = new LedgerEventBus(this, "EventBus");
     this.api = new LedgerApi(this, "Api", {queue: this.requestQueue.queue});
     this.worker = new LedgerWorker(this, "Worker", {
       queue: this.requestQueue.queue,
       table: this.idempotencyTable.table,
+      kycTable: this.kycTable.table,
       eventBus: this.eventBus.bus,
     });
 
@@ -39,6 +43,7 @@ export class LedgerStack extends Stack {
     // Read by acceptance-tests (aws/stack/ReadStackOutputs.ts) to find the deployed resources.
     new CfnOutput(this, LEDGER_STACK_OUTPUTS.apiUrl, {value: this.api.restApi.url});
     new CfnOutput(this, LEDGER_STACK_OUTPUTS.tableName, {value: this.idempotencyTable.table.tableName});
+    new CfnOutput(this, LEDGER_STACK_OUTPUTS.kycTableName, {value: this.kycTable.table.tableName});
   }
 }
 

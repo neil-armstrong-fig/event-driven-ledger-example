@@ -1,9 +1,9 @@
 import {extractIdempotencyKey} from "./ExtractIdempotencyKey";
-import type {IncomingLedgerMessage} from "./IncomingLedgerMessage";
+import type {IncomingLedgerMessage} from "./types/IncomingLedgerMessage";
 
 it("extracts the idempotency key from the SQS message attribute", () => {
   const message: IncomingLedgerMessage = {
-    messageAttributes: {IdempotencyKey: {stringValue: "idem-001"}},
+    messageAttributes: {IdempotencyKey: {stringValue: "idem-001"}, CustomerId: {stringValue: "customer-1"}},
     body: JSON.stringify({assetId: "asset-1", requestId: "req-1"}),
   };
 
@@ -12,7 +12,7 @@ it("extracts the idempotency key from the SQS message attribute", () => {
 
 it("ignores an idempotencyKey-shaped field in the body, sourcing only from the message attribute", () => {
   const message: IncomingLedgerMessage = {
-    messageAttributes: {IdempotencyKey: {stringValue: "idem-002"}},
+    messageAttributes: {IdempotencyKey: {stringValue: "idem-002"}, CustomerId: {stringValue: "customer-1"}},
     body: JSON.stringify({assetId: "asset-1", requestId: "req-1", idempotencyKey: "body-idem-999"}),
   };
 
@@ -21,11 +21,11 @@ it("ignores an idempotencyKey-shaped field in the body, sourcing only from the m
 
 it("returns the same idempotency key for two messages sharing it but differing in requestId", () => {
   const first: IncomingLedgerMessage = {
-    messageAttributes: {IdempotencyKey: {stringValue: "idem-003"}},
+    messageAttributes: {IdempotencyKey: {stringValue: "idem-003"}, CustomerId: {stringValue: "customer-1"}},
     body: JSON.stringify({assetId: "asset-1", requestId: "req-a"}),
   };
   const second: IncomingLedgerMessage = {
-    messageAttributes: {IdempotencyKey: {stringValue: "idem-003"}},
+    messageAttributes: {IdempotencyKey: {stringValue: "idem-003"}, CustomerId: {stringValue: "customer-1"}},
     body: JSON.stringify({assetId: "asset-1", requestId: "req-b"}),
   };
 

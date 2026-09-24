@@ -4,7 +4,7 @@ The CDK app: stacks and constructs that deploy the worker's _built artifact_ —
 source — see the root `AGENTS.md` package table. `src/` holds `LedgerStack.ts` (the real deployable
 stack) plus one subject-named subfolder per resource (`queue/`, etc.), each with its test file
 colocated right beside it — same convention as every other package, no separate `test/` folder. `bin/App.ts` is the CDK CLI entry (`cdk.json` runs it via `tsx`); `pnpm synth` runs a real `cdk synth`, outside `checks`. `pnpm deploy:local` is `cdklocal destroy --force` then a fresh `cdklocal deploy` with `-c includeEventSink=true` — the destroy-first loop below, as one command (needs LocalStack up and bootstrapped).
-Built one resource at a time, each with the `LedgerStack` snapshot updated alongside the construct code: FIFO queue + DLQ, DynamoDB table, EventBridge bus, API GW + validator + direct SQS integration, worker Lambda + event source mapping, least-privilege IAM, and a full-stack `cdk synth` via the CLI.
+Built one resource at a time, each with the `LedgerStack` snapshot updated alongside the construct code: FIFO queue + DLQ, DynamoDB idempotency table, KYC status table, EventBridge bus, API GW + validator + direct SQS integration, worker Lambda + event source mapping, least-privilege IAM, and a full-stack `cdk synth` via the CLI.
 
 ## Source layout
 
@@ -21,13 +21,16 @@ src/
 ├── idempotency/                      DynamoDB idempotency table
 │   ├── LedgerIdempotencyTable.ts
 │   └── LedgerIdempotencyTable.test.ts   DESTROY removal policy (own named assertion)
+├── kyc/                              DynamoDB KYC status table, keyed on the customer — the worker only reads it
+│   ├── LedgerKycTable.ts
+│   └── LedgerKycTable.test.ts        DESTROY removal policy, and the customer key (own named assertions)
 ├── events/                           EventBridge
 │   ├── LedgerEventBus.ts             custom bus
-│   └── LedgerEventSink.ts            rule → state machine → table of events for acceptance tests; only with `-c includeEventSink=true`
+│   └── LedgerEventSink.ts            rule (both KYC events) → state machine → table of events for acceptance tests; only with `-c includeEventSink=true`
 ├── api/                              API Gateway → SQS
 │   ├── LedgerApi.ts
-│   ├── LedgerApi.test.ts             Idempotency-Key header is required
-│   └── request/LedgerApiRequestTemplate.ts   the VTL request template
+│   ├── LedgerApi.test.ts             Idempotency-Key and Customer-Id headers are required
+│   └── request/LedgerApiRequestTemplate.ts   the VTL request template — and the one seam for identity
 └── worker/                           worker Lambda + SQS event source + grants
     ├── LedgerWorker.ts
     └── workspace/FindWorkspaceRoot.ts        locates the worker entry file from the repo root
@@ -73,8 +76,8 @@ update is safe to test against, even for a change that looks trivial. This does 
 
 ## Other gotchas that apply specifically here
 
-- **DynamoDB table needs `removalPolicy: RemovalPolicy.DESTROY`** set explicitly on the idempotency
-  table. CDK's default is `RETAIN` (correct for production, wrong for this ephemeral demo stack) —
+- **Every DynamoDB table needs `removalPolicy: RemovalPolicy.DESTROY`** set explicitly (idempotency, KYC
+  status, and the sink). CDK's default is `RETAIN` (correct for production, wrong for this ephemeral demo stack) —
   forgetting this causes `ResourceInUseException: Table already exists` on the next fresh deploy after
   a teardown, and can leave the CloudFormation stack `DELETE_FAILED`.
 - **Lambda runtime: `nodejs22.x` or newer.** `nodejs20.x` is already flagged deprecated by AWS.
@@ -83,8 +86,9 @@ update is safe to test against, even for a change that looks trivial. This does 
   that's separate and still required.
 - **VTL request template for the API GW → SQS FIFO integration**: use the proven template in
   `src/api/request/LedgerApiRequestTemplate.ts` — `MessageBody` is an exact passthrough
-  of the request body, `Idempotency-Key` goes in as `MessageAttribute.1.*`, never spliced into the JSON
-  body. The message-attribute approach is a hard requirement, not a style choice — see the root
+  of the request body, `Idempotency-Key` goes in as `MessageAttribute.1.*` and `Customer-Id` as
+  `MessageAttribute.2.*`, never spliced into the JSON body. `Customer-Id` stands in for what an authoriser
+  would supply: with real auth, `$context.authorizer.principalId` replaces that one expression. The message-attribute approach is a hard requirement, not a style choice — see the root
   `AGENTS.md` gotchas for the VTL parse error that ruled out body-splicing.
 - **CDK output is tested by snapshot, not itemised assertions.** The developer's call: fine-grained
   `hasResourceProperties` checks per resource are too restrictive against ordinary TypeScript
@@ -99,5 +103,11 @@ LedgerStack(...)).toJSON()` — the real stack, not a per-construct test-only st
   failure message. The Lambda asset `S3Key` hash is normalised out in `LedgerStack.test.ts`,
   so a worker code change doesn't churn the snapshot and train people to blindly run `-u`. The `.snap` file must be committed —
   Vitest only fails on a _missing_ snapshot, so an uncommitted one gives zero protection.
+- **The worker is least-privilege per table**: `PutItem` on the idempotency table, `GetItem` on the KYC
+  table, and never a write to the KYC table — a worker that could write it could make a customer verified
+  (`docs/decisions/0003-kyc-gating.md`). Only the snapshot pins this, so read that diff line by line.
+- **The sink stores an event's whole `detail` as one JSON string** (`States.JsonToString`, accepted by
+  LocalStack), not field by field: a JSON path missing from an event fails the state, and the two KYC
+  events carry different fields (only a rejection has a `reason`).
 - **LocalStack Hobby tier has no official CI support** — the CI `acceptance` job can fail for licensing
   or service reasons unrelated to the code — a risk accepted knowingly.

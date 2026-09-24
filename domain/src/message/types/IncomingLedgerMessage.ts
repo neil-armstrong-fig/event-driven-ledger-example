@@ -3,6 +3,9 @@ export interface IncomingLedgerMessage {
     IdempotencyKey: {
       stringValue: string;
     };
+    CustomerId: {
+      stringValue: string;
+    };
   };
   body: string;
 }

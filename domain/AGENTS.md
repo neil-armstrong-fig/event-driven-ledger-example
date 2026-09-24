@@ -1,7 +1,34 @@
 # AGENTS.md — domain
 
-Pure business logic: idempotency-key semantics and the `KYC_PASSED_STUB` event payload builder — see
-the root `AGENTS.md` package table. TDD here means the test picks the shape, not the other way round — don't invent structure ahead of the first failing test.
+Pure business logic: reading the idempotency key and customer id off a message, the KYC decision rule
+(`evaluateKyc`), and the KYC event payload builders — see the root `AGENTS.md` package table. TDD here
+means the test picks the shape, not the other way round — don't invent structure ahead of the first failing test.
+
+## Source layout
+
+Each folder's root holds its entry points and their tests; plain shapes drop into a `types/` folder
+beneath. Folders are named for subject (root `AGENTS.md`, code style).
+
+```
+src/
+├── message/                     reading an SQS message — from message attributes only, never the body
+│   ├── ExtractIdempotencyKey.ts
+│   ├── ExtractCustomerId.ts
+│   └── types/IncomingLedgerMessage.ts
+└── kyc/                         the KYC gate (docs/decisions/0003-kyc-gating.md)
+    ├── EvaluateKyc.ts           status record + injected clock → passed, or rejected with a reason
+    ├── ParseKycStatus.ts        a status read back from storage, or a fault — never a guess
+    ├── ParseKycDecision.ts      a stored decision read back the same way
+    ├── types/                   KycDecision, KycStatusRecord, StoredKycDecision
+    └── events/                  BuildKycPassedEvent, BuildKycRejectedEvent
+        └── types/               the two event details
+```
+
+`KycStatus`, `KycRejectionReason` and `KycOutcome` are **not** here: the acceptance specs use the same
+words, so they are vocabulary in `shared/src/kyc/` (`as const` lists with the types read off them), and
+this package imports them. The rules that pick between them stay here. The parsers exist because an
+adapter reads plain strings back from storage; whether a string is a real status is pure, so it is tested
+here and the adapter stays thin.
 
 ## Import boundary — stricter than the workspace rule
 
@@ -24,11 +51,13 @@ Per the root `AGENTS.md`: red, then green, then move on. Concretely:
 
 1. Idempotency-key handling — write the failing test for header/message-attribute extraction and
    shape first, watch it fail for the right reason, show it to the developer before implementing.
-2. `KYC_PASSED_STUB` event payload builder — same red→green cycle, separately.
+2. The KYC event payload builders (`KYC_PASSED`, `KYC_REJECTED`) — same red→green cycle, separately.
+3. The KYC decision rule (`evaluateKyc`) — one case per row of the decision table in `docs/decisions/0003-kyc-gating.md`,
+   the boundary included (the very moment of expiry counts as expired), with the clock passed in so nothing waits.
 
-The two named gaps in `docs/decisions/` (dedup-vs-idempotency, dual-write) are exactly the kind of edge
-case this package's tests should encode explicitly — e.g. a test asserting that the idempotency key
-comes from the message attribute alone, and a differing `requestId` in the body has no effect on it.
+The named decisions in `docs/decisions/` are exactly the kind of edge case this package's tests should
+encode explicitly — e.g. a test asserting that the idempotency key and the customer come from the message
+attributes alone, and that a differing `requestId` or a `customerId` in the body has no effect on either.
 Neither SQS dedup nor the DynamoDB conditional write exists in `domain`; those are `worker`/`infra`
 concerns — this package proves only the pure shape the rest of the system relies on.
 

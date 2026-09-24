@@ -11,9 +11,10 @@ import {
 
 let status: number;
 
-given("a client submits a fractionalization request", () => {
+given("a verified customer submits a fractionalization request", () => {
   beforeEach(async ({ledger}) => {
-    status = await ledger.requests.submit({idempotencyKey: "k1", assetId: "a1", requestId: "r1"});
+    await ledger.kyc.seedCustomer({customerId: "c1", status: "verified"});
+    status = await ledger.requests.submit({idempotencyKey: "k1", customerId: "c1", assetId: "a1", requestId: "r1"});
   });
 
   when("the API has answered", () => {
@@ -36,7 +37,7 @@ given("a client submits a fractionalization request", () => {
 
 `given`/`when` are `describe`; `then` is `it`, which is why only `then` receives the DSL. The import
 says `criterionThat as then` because of a Vitest loading trap — see `acceptance-tests/AGENTS.md`.
-**Generate the idempotency key and `requestId` in the `beforeEach`, not at module level** — the deployed stack is shared and outlives a run (`acceptance-tests/AGENTS.md`, "Test data is fresh").
+**Generate the idempotency key, `requestId` and `customerId` in the `beforeEach`, not at module level** — the deployed stack is shared and outlives a run (`acceptance-tests/AGENTS.md`, "Test data is fresh").
 State a `beforeEach` produces for a `then` is a module-level `let`, assigned in the `beforeEach`.
 
 ## Arrange in a `beforeEach`, assert in the `then`

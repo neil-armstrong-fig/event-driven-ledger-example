@@ -5,9 +5,8 @@ import type {EventBus} from "aws-cdk-lib/aws-events";
 import {SfnStateMachine} from "aws-cdk-lib/aws-events-targets";
 import {DefinitionBody, JsonPath, StateMachine, StateMachineType} from "aws-cdk-lib/aws-stepfunctions";
 import {DynamoAttributeValue, DynamoPutItem} from "aws-cdk-lib/aws-stepfunctions-tasks";
+import {KYC_DETAIL_TYPES} from "@ledger/shared/events/KycDetailTypes";
 import {Construct} from "constructs";
-
-const KYC_PASSED_DETAIL_TYPE = "KYC_PASSED_STUB";
 
 interface LedgerEventSinkProps {
   readonly bus: EventBus;
@@ -15,7 +14,7 @@ interface LedgerEventSinkProps {
 
 /**
  * A test-only listener: there is no way to ask EventBridge "was this emitted", so a rule stores every
- * `KYC_PASSED_STUB` in a table the acceptance tests can query by idempotency key. Unlike a queue,
+ * `KYC_PASSED` and `KYC_REJECTED` in a table the acceptance tests can query by idempotency key. Unlike a queue,
  * reading it consumes nothing, so specs running in parallel cannot take each other's events. The rule
  * targets a state machine that does one `PutItem` — no handler code to build or maintain. Mounted
  * only behind the `includeEventSink` context flag — see `LedgerStack`.
@@ -42,7 +41,10 @@ export class LedgerEventSink extends Construct {
       item: {
         idempotencyKey: DynamoAttributeValue.fromString(JsonPath.stringAt("$.detail.idempotencyKey")),
         eventId: DynamoAttributeValue.fromString(JsonPath.stringAt("$.id")),
-        assetId: DynamoAttributeValue.fromString(JsonPath.stringAt("$.detail.assetId")),
+        detailType: DynamoAttributeValue.fromString(JsonPath.stringAt("$['detail-type']")),
+        // The whole detail as JSON, since the two outcomes carry different fields (only a rejection has a reason)
+        // and a path that is missing from an event would fail the state.
+        detail: DynamoAttributeValue.fromString(JsonPath.jsonToString(JsonPath.objectAt("$.detail"))),
       },
     });
 
@@ -53,7 +55,7 @@ export class LedgerEventSink extends Construct {
 
     new Rule(this, "KycPassedRule", {
       eventBus: bus,
-      eventPattern: {detailType: [KYC_PASSED_DETAIL_TYPE]},
+      eventPattern: {detailType: [KYC_DETAIL_TYPES.passed, KYC_DETAIL_TYPES.rejected]},
       targets: [new SfnStateMachine(stateMachine)],
     });
   }

@@ -26,7 +26,7 @@ export default [
         "error",
         {
           selector:
-            'CallExpression[callee.name="then"] CallExpression[callee.property.name=/^(submit|waitForRecord|waitForKycPassedEvents)$/]',
+            'CallExpression[callee.name="then"] CallExpression[callee.property.name=/^(submit|submitWithoutCustomer|seedCustomer|waitForRecord|waitForKycPassedEvents|waitForKycRejectedEvents)$/]',
           message:
             "Arrange in a beforeEach on the given or when, not inside a then. A criterion asserts; it does not set up.",
         },

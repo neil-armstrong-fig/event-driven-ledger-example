@@ -29,3 +29,18 @@ it("serves fractionalization requests at the path the acceptance tests post to",
 
   template.hasResourceProperties("AWS::ApiGateway::Resource", {PathPart: FRACTIONALIZATION_REQUESTS_PATH});
 });
+
+it("requires the Customer-Id header, the stand-in for the identity an authoriser would supply", () => {
+  const stack = new Stack(new App(), "TestStack");
+  const queue = new Queue(stack, "Queue", {fifo: true});
+  new LedgerApi(stack, "Api", {queue});
+
+  const template = Template.fromStack(stack);
+
+  template.hasResourceProperties("AWS::ApiGateway::Method", {
+    HttpMethod: "POST",
+    RequestParameters: {
+      "method.request.header.Customer-Id": true,
+    },
+  });
+});

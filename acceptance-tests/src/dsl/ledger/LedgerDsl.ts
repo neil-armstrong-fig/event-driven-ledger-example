@@ -1,4 +1,5 @@
 import {EventsDsl} from "@src/dsl/ledger/components/events/EventsDsl";
+import {KycDsl} from "@src/dsl/ledger/components/kyc/KycDsl";
 import {RecordsDsl} from "@src/dsl/ledger/components/records/RecordsDsl";
 import {RequestsDsl} from "@src/dsl/ledger/components/requests/RequestsDsl";
 import type {LedgerEndpoints} from "@src/dsl/ledger/types/LedgerEndpoints";
@@ -13,16 +14,18 @@ import type {LedgerEndpoints} from "@src/dsl/ledger/types/LedgerEndpoints";
  * naming the intention.
  *
  * The ledger has no part of its own to drive, so unlike a root with something to open or resize this
- * one has no counterpart: it only builds the three areas a spec reaches — what goes in (`requests`),
- * what is written down (`records`) and what is announced (`events`).
+ * one has no counterpart: it only builds the four areas a spec reaches — what goes in (`requests`),
+ * what is known about who sent it (`kyc`), what is written down (`records`) and what is announced (`events`).
  */
 export class LedgerDsl {
   readonly requests: RequestsDsl;
+  readonly kyc: KycDsl;
   readonly records: RecordsDsl;
   readonly events: EventsDsl;
 
   constructor(endpoints: LedgerEndpoints) {
     this.requests = new RequestsDsl(endpoints);
+    this.kyc = new KycDsl(endpoints);
     this.records = new RecordsDsl(endpoints);
     this.events = new EventsDsl(endpoints);
   }
